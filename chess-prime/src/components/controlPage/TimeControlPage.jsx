@@ -262,11 +262,11 @@ function Sidebar() {
             <button
               key={item.name}
               onClick={() => setActive(item.name)}
-              className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg transition text-xs
+              className={`w-full flex items-center gap-4 px-4 py-2 rounded-full transition text-xs
                 ${
                   isActive
-                    ? "bg-amber-500 text-black"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-[#FFA20026] text-black"
+                    : "text-gray-400 hover:bg-white/5 hover:text-[#FFA20026] "
                 }`}
             >
               <span className={isActive ? "text-black" : "text-gray-400"}>{item.icon}</span>
