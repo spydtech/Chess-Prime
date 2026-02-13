@@ -1,12 +1,13 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
 import { ErrorElement } from "./error/ErrorElement";
+import ChessversLanding from "./components/ChessversLanding";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <div>Welcome to Chess Game</div>,
+      element: <ChessversLanding />,
       errorElement: <ErrorElement />,
     },
     {
