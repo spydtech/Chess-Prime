@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
 import { ErrorElement } from "./error/ErrorElement";
 import ChessversLanding from "./components/ChessversLanding";
+import TimeControlPage from "./components/controlPage/TimeControlPage";
 
 function App() {
   const router = createBrowserRouter([
@@ -20,6 +21,11 @@ function App() {
       element: <div>Register Page</div>,
       errorElement: <ErrorElement />,
     },
+    {
+      path: "/dashboard",
+      element: <TimeControlPage />,
+      errorElement: <ErrorElement />,
+    }
   ]);
 
   return <RouterProvider router={router} />;

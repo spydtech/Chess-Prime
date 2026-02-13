@@ -1,7 +1,7 @@
 // src/components/ChessHero.jsx
 import React from "react";
 import { Play } from "lucide-react";
-import logo from "../assets/landing-images/Untitled design.png";
+import logo from "../assets/landing-images/logo2.png";
 import main from "../assets/landing-images/main.png";
 
 const ChessversLanding = () => {
@@ -12,12 +12,12 @@ const ChessversLanding = () => {
         {/* LEFT CONTENT */}
         <div>
           {/* Logo */}
-          <div className="flex items-center  mb-10    ">
-            <div className="   flex items-center justify-center  rounded-full p-2 ">
+          <div className="flex items-center  mb-10   bg-[#150F0B]  ">
+            <div className="   flex items-center justify-center   rounded-full p-2 ">
                 <img
                     src={logo}
                     alt="chess logo"
-                    className="w-[180px] h-[180px] object-contain bg-black  rounded-full   p-4 "
+                    className="w-[180px] h-[180px] object-contain bg-white  rounded-full   p-4 "
                 />
             </div>
            
