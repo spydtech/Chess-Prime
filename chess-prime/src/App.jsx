@@ -50,6 +50,7 @@ import TimeControlPage from "./components/controlPage/TimeControlPage";
 import Dashboard from "./components/Dashboard"; // Import the new Dashboard component
 import DashboardLayout from "./components/DashboardLayout"; // Optional: import layout
 import ChessversLanding from "./components/ChessversLanding"; // Import the landing page
+import GamePage from "./components/pagescomponents/gamePages/GamePage";
 
 
 function App() {
@@ -94,6 +95,12 @@ function App() {
       ),
       errorElement: <ErrorElement />,
     },
+     {
+      path: "/game/:mode/:timeControl?",
+      element: <GamePage />,
+      errorElement: <ErrorElement />,
+    },
+    
     // You can add more routes that use the same layout
     {
       path: "/profile",
