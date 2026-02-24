@@ -3,6 +3,7 @@ import React from "react";
 import { Play } from "lucide-react";
 import logo from "../assets/landing-images/logo2.png";
 import main from "../assets/landing-images/main.png";
+import { Link } from "react-router-dom";
 
 const ChessversLanding = () => {
   return (
@@ -68,14 +69,19 @@ const ChessversLanding = () => {
             className="w-[400px] drop-shadow-2xl  py-10"
           />
           <div className="flex gap-4 mt-10 justify-right  ">
+            <Link to="/login">
             <button className="flex items-center gap-2 bg-[#FFA200] hover:bg-[#FFA200] text-white text-sm  px-6 py-3 rounded-full shadow-lg transition">
               <Play size={18} />
               Play Now
             </button>
+             </Link>
 
+            <Link to="/login">
             <button className="border border-amber-500 text-white text-sm px-6 py-3 rounded-full hover:bg-[#FFA200] hover:text-white transition">
               Learn With Us
             </button>
+            </Link>
+           
           </div>
         </div>
          
