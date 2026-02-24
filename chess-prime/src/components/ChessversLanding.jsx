@@ -17,7 +17,7 @@ const ChessversLanding = () => {
                 <img
                     src={logo}
                     alt="chess logo"
-                    className="w-[180px] h-[180px] object-contain bg-white  rounded-full   p-4 "
+                    className="w-[180px] h-[180px] object-contain bg-white bg-transparent-white  rounded-full   p-4 "
                 />
             </div>
            
@@ -74,7 +74,7 @@ const ChessversLanding = () => {
             </button>
 
             <button className="border border-amber-500 text-white text-sm px-6 py-3 rounded-full hover:bg-[#FFA200] hover:text-white transition">
-              Watch a Game
+              Learn With Us
             </button>
           </div>
         </div>
