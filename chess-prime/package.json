@@ -12,6 +12,7 @@
   "dependencies": {
     "@rolldown/binding-win32-x64-msvc": "^1.0.0-rc.3",
     "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.13.5",
     "chess.js": "^1.4.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",

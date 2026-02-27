@@ -94,15 +94,13 @@
 
 
 
-
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import TimeControlPage from "./controlPage/TimeControlPage";
 import Social from "./pagescomponents/Social";
-// import Watch from "./pagescomponents/Watch";
-// import Learn from "./pagescomponents/Learn";
-// import More from "./pagescomponents/More";
-// import Puzzles from "./pagescomponents/Puzzles";
+import Learn from "./pagescomponents/LearnPage";
+import Puzzles from "./pagescomponents/Puzzles";
+import Playnow from "./pagescomponents/PlayPage";
 import { useNavigate } from "react-router-dom";
 
 const addScrollbarStyles = () => {
@@ -127,15 +125,16 @@ const addScrollbarStyles = () => {
 
 export default function Dashboard() {
   const [activeComponent, setActiveComponent] = useState("Play");
+
   const [gameState, setGameState] = useState({
-    status: 'menu',
+    status: "menu",
     gameMode: null,
     timeControl: null,
     opponent: null,
     lobbyData: null,
-    players: []
+    players: [],
   });
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -144,70 +143,86 @@ export default function Dashboard() {
 
   const handleItemClick = (item) => {
     setActiveComponent(item);
-    
+
     if (item === "Play vs Computer") {
-      navigate('/game/vs-computer/10+0');
-    } else if (item === "Game Started" && gameState.gameMode === 'online') {
-      navigate(`/game/online/${gameState.timeControl || '10+0'}`);
+      navigate("/game/vs-computer/10+0");
+    } else if (item === "Game Started" && gameState.gameMode === "online") {
+      navigate(`/game/online/${gameState.timeControl || "10+0"}`);
     }
   };
 
   const renderComponent = () => {
     switch (activeComponent) {
       case "Play":
-        return <TimeControlPage 
-          gameState={gameState} 
-          setGameState={setGameState}
-          onGameStart={(mode, timeControl) => {
-            setGameState({
-              ...gameState,
-              status: 'playing',
-              gameMode: mode,
-              timeControl: timeControl
-            });
-            if (mode === 'vs-computer') {
-              navigate(`/game/vs-computer/${timeControl}`);
-            }
-          }}
-        />;
-      // case "Puzzles":
-      //   return <Puzzles />;
-      // case "Learn":
-      //   return <Learn />;
-      // case "Watch":
-      //   return <Watch />;
+        return (
+          <TimeControlPage
+            gameState={gameState}
+            setGameState={setGameState}
+            onGameStart={(mode, timeControl) => {
+              setGameState({
+                ...gameState,
+                status: "playing",
+                gameMode: mode,
+                timeControl: timeControl,
+              });
+
+              if (mode === "vs-computer") {
+                navigate(`/game/vs-computer/${timeControl}`);
+              }
+            }}
+          />
+        );
+
+      case "Puzzles":
+        return <Puzzles />;
+
+      case "Play Now":
+        return <Playnow />;
+
+      case "Learn":
+        return <Learn />;
+
       case "Social":
         return <Social />;
-      // case "More":
-      //   return <More />;
+
       default:
-        return <TimeControlPage 
-          gameState={gameState} 
-          setGameState={setGameState}
-          onGameStart={(mode, timeControl) => {
-            setGameState({
-              ...gameState,
-              status: 'playing',
-              gameMode: mode,
-              timeControl: timeControl
-            });
-            if (mode === 'vs-computer') {
-              navigate(`/game/vs-computer/${timeControl}`);
-            }
-          }}
-        />;
+        return (
+          <TimeControlPage
+            gameState={gameState}
+            setGameState={setGameState}
+            onGameStart={(mode, timeControl) => {
+              setGameState({
+                ...gameState,
+                status: "playing",
+                gameMode: mode,
+                timeControl: timeControl,
+              });
+
+              if (mode === "vs-computer") {
+                navigate(`/game/vs-computer/${timeControl}`);
+              }
+            }}
+          />
+        );
     }
   };
 
   return (
     <div className="flex h-screen bg-gradient-to-r from-[#0b0502] to-[#2b2623] text-white overflow-hidden">
+      
+      {/* Sidebar */}
       <Sidebar
         activeItem={activeComponent}
         onItemClick={handleItemClick}
         gameState={gameState}
         setGameState={setGameState}
       />
-      {renderComponent()}
+
+      {/* Main Content Area */}
+      <div className="flex-1 h-full w-full  overflow-hidden">
+        {renderComponent()}
+      </div>
+
     </div>
   );
 }

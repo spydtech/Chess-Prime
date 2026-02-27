@@ -4,6 +4,7 @@ import { Play } from "lucide-react";
 import logo from "../assets/landing-images/logo2.png";
 import main from "../assets/landing-images/main.png";
 import { Link } from "react-router-dom";
+import ChessAcademySlider from "./ChessAcademySlider";
 
 const ChessversLanding = () => {
   return (
@@ -76,7 +77,7 @@ const ChessversLanding = () => {
             </button>
              </Link>
 
-            <Link to="/login">
+            <Link to="/chess-learning">
             <button className="border border-amber-500 text-white text-sm px-6 py-3 rounded-full hover:bg-[#FFA200] hover:text-white transition">
               Learn With Us
             </button>
@@ -90,6 +91,7 @@ const ChessversLanding = () => {
          <h1 className="text-center text-gray-500 text-xl font-medium mt-10">Everything You Need to
         <span className="text-[#FFA200]"> Master Chess</span></h1>
       </div>
+      {/* <ChessAcademySlider /> */}
      
     </section>
   );
