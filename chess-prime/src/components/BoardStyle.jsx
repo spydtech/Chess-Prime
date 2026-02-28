@@ -47,7 +47,7 @@ export default function BoardStyle() {
     console.log("Current localStorage value:", JSON.parse(localStorage.getItem("boardStyle")));
 
     // Navigate to tournament dashboard
-    navigate("/tournament-dashboard");
+    navigate("/dashboard");
   };
 
   // Load previously saved preference on component mount

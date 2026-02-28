@@ -59,7 +59,7 @@ function App() {
       errorElement: <ErrorElement />,
     },
     {
-      path: "/tournament-dashboard",
+      path: "/tournament",
       element: <Tournamentdashboard />,
       errorElement: <ErrorElement />,
     },

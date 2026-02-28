@@ -258,8 +258,8 @@ export default function ChessGame({ gameState, onExit }) {
             className="relative flex items-center justify-center text-4xl cursor-pointer transition-colors duration-200"
             style={{
               backgroundColor: bgColor,
-              width: '75px',
-              height: '75px',
+              width: '100px',
+              height: '100px',
               color: piece?.color === 'w' ? '#ffffff' : '#000000',
               textShadow: piece?.color === 'w' ? '1px 1px 2px rgba(0,0,0,0.3)' : '1px 1px 2px rgba(255,255,255,0.3)'
             }}
