@@ -10,9 +10,6 @@ const generateToken = (userId, remember = false) => {
   );
 };
 
-/**
- * REGISTER
- */
 export const register = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -47,7 +44,12 @@ export const register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        rating: user.rating
+        chessExperience: user.chessExperience,
+        rating: user.rating,
+        gamesPlayed: user.gamesPlayed,
+        gamesWon: user.gamesWon,
+        gamesLost: user.gamesLost,
+        gamesDrawn: user.gamesDrawn
       }
     });
 
@@ -57,9 +59,6 @@ export const register = async (req, res) => {
   }
 };
 
-/**
- * LOGIN
- */
 export const login = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -71,7 +70,7 @@ export const login = async (req, res) => {
 
     const user = await User.findOne({
       email: email.toLowerCase().trim()
-    }).select('+password'); // IMPORTANT
+    }).select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -87,6 +86,11 @@ export const login = async (req, res) => {
       });
     }
 
+    // Update online status
+    user.isOnline = true;
+    user.lastSeen = new Date();
+    await user.save();
+
     const token = generateToken(user._id, remember);
 
     res.json({
@@ -96,11 +100,13 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        chessExperience: user.chessExperience,
         rating: user.rating,
         gamesPlayed: user.gamesPlayed,
         gamesWon: user.gamesWon,
         gamesLost: user.gamesLost,
-        gamesDrawn: user.gamesDrawn
+        gamesDrawn: user.gamesDrawn,
+        isOnline: user.isOnline
       }
     });
 
@@ -109,6 +115,7 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Server error during login' });
   }
 };
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -118,6 +125,7 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // In production, send email here
     res.json({ 
       message: 'Password reset instructions sent to your email' 
     });
@@ -134,14 +142,66 @@ export const getCurrentUser = async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      chessExperience: user.chessExperience,
       rating: user.rating,
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
       gamesLost: user.gamesLost,
-      gamesDrawn: user.gamesDrawn
+      gamesDrawn: user.gamesDrawn,
+      isOnline: user.isOnline
     });
   } catch (error) {
     console.error('Get current user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateChessExperience = async (req, res) => {
+  try {
+    const { chessExperience } = req.body;
+    
+    if (![1, 2, 3, 4].includes(chessExperience)) {
+      return res.status(400).json({ 
+        message: 'Invalid chess experience value' 
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { chessExperience },
+      { new: true }
+    ).select('-password');
+
+    res.json({
+      message: 'Chess experience updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        chessExperience: user.chessExperience,
+        rating: user.rating,
+        gamesPlayed: user.gamesPlayed,
+        gamesWon: user.gamesWon,
+        gamesLost: user.gamesLost,
+        gamesDrawn: user.gamesDrawn
+      }
+    });
+  } catch (error) {
+    console.error('Update chess experience error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      isOnline: false,
+      lastSeen: new Date()
+    });
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

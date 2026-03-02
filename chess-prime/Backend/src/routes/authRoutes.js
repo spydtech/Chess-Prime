@@ -4,7 +4,8 @@ import {
   register, 
   login, 
   getCurrentUser,
-  forgotPassword 
+  forgotPassword,
+  updateChessExperience 
 } from '../controllers/authController.js';
 import auth from '../middleware/auth.js';
 
@@ -38,5 +39,6 @@ router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
 router.get('/me', auth, getCurrentUser);
 router.post('/forgot-password', forgotPassword);
+router.put('/chess-experience', auth, updateChessExperience);
 
 export default router;
