@@ -1,47 +1,69 @@
 import mongoose from 'mongoose';
 
+const moveSchema = new mongoose.Schema({
+  from: String,
+  to: String,
+  promotion: String,
+  san: String,
+  fen: String,
+  time: Number,
+  moveNumber: Number
+}, { _id: false });
+
 const gameSchema = new mongoose.Schema({
-  gameId: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  gameId: {
+    type: String,
+    required: true,
+    unique: true  // This creates an index automatically
   },
-  players: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    name: String,
-    rating: Number,
-    color: { type: String, enum: ['white', 'black'] }
-  }],
+  gameType: {
+    type: String,
+    enum: ['online', 'vs-computer', 'lobby', 'tournament'],
+    required: true
+  },
   status: {
     type: String,
     enum: ['waiting', 'active', 'completed', 'abandoned'],
     default: 'waiting'
   },
-  gameMode: {
-    type: String,
-    enum: ['online', 'vs-computer', 'tournament', 'lobby'],
-    required: true
-  },
-  timeControl: {
-    initial: Number, // minutes
-    increment: Number // seconds
-  },
-  moves: [{
-    from: String,
-    to: String,
-    promotion: String,
-    san: String,
-    fen: String,
-    timestamp: { type: Date, default: Date.now }
+  players: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    username: String,
+    color: { type: String, enum: ['white', 'black'] },
+    rating: Number,
+    ratingChange: { type: Number, default: 0 },
+    timeRemaining: Number,
+    isComputer: { type: Boolean, default: false }
   }],
-  result: {
-    winner: { type: String, enum: ['white', 'black', 'draw', null], default: null },
-    method: { type: String, enum: ['checkmate', 'resign', 'timeout', 'draw', 'stalemate', null], default: null }
+  timeControl: {
+    initial: Number,
+    increment: Number
   },
-  startTime: Date,
-  endTime: Date,
-  pgn: { type: String, default: '' },
-  fenHistory: [String]
+  moves: [moveSchema],
+  currentFen: {
+    type: String,
+    default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+  },
+  result: {
+    type: String,
+    enum: ['white', 'black', 'draw', null],
+    default: null
+  },
+  termination: {
+    type: String,
+    enum: ['checkmate', 'resignation', 'timeout', 'draw', 'stalemate', 'agreement', null],
+    default: null
+  },
+  startedAt: Date,
+  endedAt: Date,
+  lastMoveAt: Date
 }, { timestamps: true });
 
-export default mongoose.model('Game', gameSchema);
+// Remove duplicate gameId index - it's already created by unique: true
+// Keep only these indexes
+gameSchema.index({ 'players.userId': 1 });
+gameSchema.index({ status: 1 });
+gameSchema.index({ createdAt: -1 });
+
+const Game = mongoose.model('Game', gameSchema);
+export default Game;

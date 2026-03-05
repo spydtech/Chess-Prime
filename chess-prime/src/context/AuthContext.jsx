@@ -103,6 +103,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
 import api from '../services/api';
+import { io } from 'socket.io-client';
 
 const AuthContext = createContext(null);
 
@@ -118,16 +119,50 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [socket, setSocket] = useState(null);
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   const initAuth = async () => {
+  //     const storedUser = authService.getCurrentUserFromStorage();
+  //     const token = authService.getToken();
+
+  //     if (storedUser && token) {
+  //       try {
+  //         const userData = await authService.getCurrentUser();
+  //         setUser(userData);
+  //       } catch (error) {
+  //         authService.logout();
+  //         setUser(null);
+  //       }
+  //     }
+  //     setLoading(false);
+  //   };
+
+  //   initAuth();
+  // }, []);
+
+
+   useEffect(() => {
     const initAuth = async () => {
       const storedUser = authService.getCurrentUserFromStorage();
       const token = authService.getToken();
 
       if (storedUser && token) {
         try {
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
+          const response = await authService.getCurrentUser();
+          setUser(response.user);
+          
+          // Initialize socket connection
+          const newSocket = io('http://localhost:5000', {
+            transports: ['websocket'],
+            withCredentials: true
+          });
+          
+          newSocket.on('connect', () => {
+            newSocket.emit('authenticate', { userId: response.user.id, token });
+          });
+          
+          setSocket(newSocket);
         } catch (error) {
           authService.logout();
           setUser(null);
@@ -137,13 +172,28 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, []);
 
+    return () => {
+      if (socket) {
+        socket.close();
+      }
+    };
+  }, []);
   const register = async (userData) => {
     try {
       setError(null);
       const response = await authService.register(userData);
       setUser(response.user);
+        const newSocket = io('http://localhost:5000', {
+        transports: ['websocket'],
+        withCredentials: true
+      });
+      
+      newSocket.on('connect', () => {
+        newSocket.emit('authenticate', { userId: response.user.id, token: response.token });
+      });
+      
+      setSocket(newSocket);
       return response.user;
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
@@ -156,6 +206,16 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await authService.login(credentials);
       setUser(response.user);
+       const newSocket = io('http://localhost:5000', {
+        transports: ['websocket'],
+        withCredentials: true
+      });
+      
+      newSocket.on('connect', () => {
+        newSocket.emit('authenticate', { userId: response.user.id, token: response.token });
+      });
+      
+      setSocket(newSocket);
       return response.user;
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed');
@@ -182,8 +242,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+      if (socket) {
+      socket.close();
+    }
     authService.logout();
     setUser(null);
+    setSocket(null);
   };
 
   const forgotPassword = async (email) => {
@@ -201,6 +265,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     error,
+     socket,
     register,
     login,
     logout,

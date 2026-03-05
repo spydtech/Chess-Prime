@@ -4,65 +4,132 @@
 // import http from 'http';
 // import { Server } from 'socket.io';
 // import dotenv from 'dotenv';
+// import path from 'path';
+// import { fileURLToPath } from 'url';
 
+// // Import routes
 // import authRoutes from './src/routes/authRoutes.js';
-// // import gameRoutes from './src/routes/game.routes.js';
+// import gameRoutes from './src/routes/gameRoutes.js';
+// import lobbyRoutes from './src/routes/lobbyRoutes.js';
+// import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
+// import computerRoutes from './src/routes/computerRoutes.js';
+// import userRoutes from './src/routes/userRoutes.js';
+
+// // Import socket handlers
+// import { setupSocketHandlers } from './src/utils/socketHandlers.js';
 
 // dotenv.config();
 
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
 // const app = express();
 // const server = http.createServer(app);
+
+// // CORS configuration
+// const allowedOrigins = [
+//   process.env.CLIENT_URL || "http://localhost:5173",
+//   "http://localhost:3000",
+//   "http://localhost:5174",
+//   "http://127.0.0.1:5173"
+// ];
+
+// // Socket.io setup
 // const io = new Server(server, {
 //   cors: {
-//     origin: [
-//       process.env.CLIENT_URL || "http://localhost:3000",
-//       "http://localhost:5173"
-//     ],
+//     origin: allowedOrigins,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
 //     credentials: true
-//   }
+//   },
+//   transports: ['websocket', 'polling']
 // });
 
-// // Middleware - FIXED CORS CONFIGURATION
+// // Express middleware
 // app.use(cors({
-//   origin: [
-//     process.env.CLIENT_URL || "http://localhost:3000",
-//     "http://localhost:5173"
-//   ],
-//   allowedHeaders: ["Content-Type", "Authorization"],
+//   origin: function(origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.indexOf(origin) === -1) {
+//       const msg = 'CORS policy does not allow access from this origin';
+//       return callback(new Error(msg), false);
+//     }
+//     return callback(null, true);
+//   },
 //   credentials: true
 // }));
 
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 
+// // Request logging
+// app.use((req, res, next) => {
+//   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+//   next();
+// });
+
 // // Database connection
-// mongoose.connect(process.env.MONGODB_URI)
-//   .then(() => console.log('MongoDB connected'))
-//   .catch(err => console.error('MongoDB connection error:', err));
+// const connectDB = async () => {
+//   try {
+//     await mongoose.connect(process.env.MONGODB_URI, {
+//       serverSelectionTimeoutMS: 5000,
+//       socketTimeoutMS: 45000,
+//     });
+//     console.log('✅ MongoDB connected successfully');
+//   } catch (err) {
+//     console.error('❌ MongoDB connection error:', err.message);
+//     process.exit(1);
+//   }
+// };
+
+// connectDB();
+
+// // MongoDB event handlers
+// mongoose.connection.on('disconnected', () => {
+//   console.log('❌ MongoDB disconnected');
+// });
+
+// mongoose.connection.on('reconnected', () => {
+//   console.log('✅ MongoDB reconnected');
+// });
 
 // // Routes
 // app.use('/api/auth', authRoutes);
-// // app.use('/api/games', gameRoutes);
+// app.use('/api/games', gameRoutes);
+// app.use('/api/lobby', lobbyRoutes);
+// app.use('/api/quick-match', quickMatchRoutes);
+// app.use('/api/computer', computerRoutes);
+// app.use('/api/users', userRoutes);
 
-// // Basic route for testing
-// app.get('/', (req, res) => {
-//   res.json({ message: 'ChessVerse API is running' });
+// // Health check
+// app.get('/health', (req, res) => {
+//   res.json({ 
+//     status: 'healthy',
+//     timestamp: new Date().toISOString(),
+//     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+//   });
 // });
+
+// // Setup socket handlers
+// setupSocketHandlers(io);
 
 // // Error handling middleware
 // app.use((err, req, res, next) => {
-//   console.error(err.stack);
+//   console.error('❌ Error:', err.stack);
 //   res.status(err.status || 500).json({
-//     message: err.message || 'Something went wrong!',
-//     error: process.env.NODE_ENV === 'development' ? err : {}
+//     message: err.message || 'Internal server error',
+//     error: process.env.NODE_ENV === 'development' ? err.stack : {}
 //   });
+// });
+
+// // 404 handler
+// app.use((req, res) => {
+//   res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
 // });
 
 // const PORT = process.env.PORT || 5000;
 // server.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
+//   console.log(`🚀 Server running on port ${PORT}`);
+//   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 // });
-
 
 import express from 'express';
 import mongoose from 'mongoose';
@@ -70,6 +137,8 @@ import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import routes
 import authRoutes from './src/routes/authRoutes.js';
@@ -77,21 +146,24 @@ import gameRoutes from './src/routes/gameRoutes.js';
 import lobbyRoutes from './src/routes/lobbyRoutes.js';
 import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
 import computerRoutes from './src/routes/computerRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './src/utils/socketHandlers.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const server = http.createServer(app);
 
 // CORS configuration
 const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:3000",
-  "http://localhost:5173",
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "http://localhost:3000",
   "http://localhost:5174",
-  "http://127.0.0.1:3000",
   "http://127.0.0.1:5173"
 ];
 
@@ -100,47 +172,48 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
   },
   transports: ['websocket', 'polling']
 });
 
+// Make io accessible to routes/controllers
+app.set('io', io);
+
 // Express middleware
 app.use(cors({
   origin: function(origin, callback) {
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'CORS policy does not allow access from this origin';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
   },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Database connection with retry logic
+// Database connection with retry logic and SSL options
 const connectDB = async () => {
   try {
-    // Remove deprecated options
     await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      ssl: true,
+      tls: true,
+      tlsAllowInvalidCertificates: true,
+      tlsAllowInvalidHostnames: true,
     });
     console.log('✅ MongoDB connected successfully');
-    console.log(`📊 Database: ${mongoose.connection.name}`);
-    console.log(`🌐 Host: ${mongoose.connection.host}`);
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
     // Retry connection after 5 seconds
@@ -150,7 +223,7 @@ const connectDB = async () => {
 
 connectDB();
 
-// Handle MongoDB connection events
+// MongoDB event handlers
 mongoose.connection.on('connected', () => {
   console.log('✅ MongoDB connected');
 });
@@ -173,60 +246,35 @@ app.use('/api/games', gameRoutes);
 app.use('/api/lobby', lobbyRoutes);
 app.use('/api/quick-match', quickMatchRoutes);
 app.use('/api/computer', computerRoutes);
+app.use('/api/users', userRoutes);
 
-// Basic route for testing
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'ChessVerse API is running',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbStatus = dbState === 1 ? 'connected' : 
-                   dbState === 2 ? 'connecting' : 
-                   dbState === 3 ? 'disconnecting' : 'disconnected';
-  
   res.json({ 
     status: 'healthy',
-    mongodb: dbStatus,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
 // Setup socket handlers
 setupSocketHandlers(io);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ 
-    message: `Route ${req.method} ${req.path} not found`,
-    error: 'Not Found'
-  });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.stack);
-  
-  const status = err.status || 500;
-  const message = err.message || 'Something went wrong!';
-  
-  res.status(status).json({
-    message,
-    error: process.env.NODE_ENV === 'development' ? {
-      stack: err.stack,
-      details: err
-    } : {}
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal server error'
   });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Client URL: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
 });

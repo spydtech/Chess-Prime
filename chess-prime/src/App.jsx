@@ -14,7 +14,8 @@ import ChessAcademySlider from "./components/ChessAcademySlider";
 import Boardstyle from "./components/BoardStyle"
 import Tournamentdashboard from "./components/MainPage"
 import Puzzles from "./components/pagescomponents/Puzzles";
-import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
+import { AppProviders } from "./Provider/AppProviders";
+
 
 function App() {
   const router = createBrowserRouter([
@@ -104,9 +105,9 @@ function App() {
 
   // Wrap RouterProvider with AuthProvider
   return (
-    <AuthProvider>
+    <AppProviders>
       <RouterProvider router={router} />
-    </AuthProvider>
+    </AppProviders>
   );
 }
 
