@@ -14,6 +14,8 @@ import ChessAcademySlider from "./components/ChessAcademySlider";
 import Boardstyle from "./components/BoardStyle"
 import Tournamentdashboard from "./components/MainPage"
 import Puzzles from "./components/pagescomponents/Puzzles";
+import Profile from "./components/Profile";
+import EditProfile from "./components/EditProfile"; // Add this import
 import { AppProviders } from "./Provider/AppProviders";
 
 
@@ -67,6 +69,24 @@ function App() {
     {
       path: "/dashboard",
       element: <Dashboard />,
+      errorElement: <ErrorElement />,
+    },
+     {
+      path: "/profile",
+      element: (
+        <DashboardLayout>
+          <Profile />
+        </DashboardLayout>
+      ),
+      errorElement: <ErrorElement />,
+    },
+    {
+      path: "/edit-profile",
+      element: (
+        <DashboardLayout>
+          <EditProfile />
+        </DashboardLayout>
+      ),
       errorElement: <ErrorElement />,
     },
     {

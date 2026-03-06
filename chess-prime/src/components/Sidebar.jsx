@@ -2559,13 +2559,21 @@ import {
   Crown,
   Swords,
   Users2,
+  Volume2,
   Bot,
   Timer,
   Search,
+  User,
+  Bell,  
+  Globe,
   X,
   Check,
   UserPlus,
+  Image,
+  LogOut,
+  UserCircle,
   Copy,
+  Grid, // Add Grid here
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import QuickMatchModal from './pagescomponents/QuickMatchModal'
@@ -3069,12 +3077,167 @@ function PlayDropdown({ isOpen, onClose, onSelect }) {
   );
 }
 
+
+function SettingsDropdown({ isOpen, onClose, onSelect }) {
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose();
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const settingsOptions = [
+    { 
+      name: "Language", 
+      icon: <Globe size={15} />, 
+      description: "English, Spanish, French, etc.",
+      action: "language"
+    },
+    { 
+      name: "Sound", 
+      icon: <Volume2 size={15} />, 
+      description: "Effects, music, notifications",
+      action: "sound"
+    },
+    { 
+      name: "Background", 
+      icon: <Image size={15} />, 
+      description: "Theme, colors, appearance",
+      action: "background"
+    },
+    { 
+      name: "Board", 
+      icon: <Grid size={15} />, 
+      description: "Piece style, board theme",
+      action: "board"
+    },
+  ];
+
+  return (
+    <div 
+      ref={dropdownRef}
+      className="absolute left-0 bottom-full mb-1 w-64 bg-[#1a0f0a] rounded-lg border border-white/10 shadow-xl z-50 overflow-hidden"
+    >
+      <div className="py-2">
+        <div className="px-4 py-2 border-b border-white/10">
+          <h3 className="text-white text-sm font-semibold">Settings</h3>
+        </div>
+        {settingsOptions.map((option) => (
+          <button
+            key={option.name}
+            className="w-full px-4 py-3 flex items-start gap-3 hover:bg-white/5 transition-colors text-left group"
+            onClick={() => {
+              onSelect(option.action);
+              onClose();
+            }}
+          >
+            <span className="text-amber-400 mt-0.5">{option.icon}</span>
+            <div className="flex-1">
+              <div className="text-white text-sm font-medium group-hover:text-amber-400 transition-colors">
+                {option.name}
+              </div>
+              <div className="text-gray-500 text-xs mt-0.5">
+                {option.description}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Profile Dropdown Component
+function ProfileDropdown({ isOpen, onClose, onSelect }) {
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose();
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const profileOptions = [
+    { 
+      name: "View Profile", 
+      icon: <UserCircle size={15} />, 
+      description: "See your stats and games",
+      action: "view-profile"
+    },
+    { 
+      name: "Sign Out", 
+      icon: <LogOut size={15} />, 
+      description: "Log out of your account",
+      action: "signout"
+    },
+  ];
+
+  return (
+    <div 
+      ref={dropdownRef}
+      className="absolute left-0 bottom-full mb-1 w-64 bg-[#1a0f0a] rounded-lg border border-white/10 shadow-xl z-50 overflow-hidden"
+    >
+      <div className="py-2">
+        <div className="px-4 py-2 border-b border-white/10">
+          <h3 className="text-white text-sm font-semibold">Profile</h3>
+        </div>
+        {profileOptions.map((option) => (
+          <button
+            key={option.name}
+            className="w-full px-4 py-3 flex items-start gap-3 hover:bg-white/5 transition-colors text-left group"
+            onClick={() => {
+              onSelect(option.action);
+              onClose();
+            }}
+          >
+            <span className="text-amber-400 mt-0.5">{option.icon}</span>
+            <div className="flex-1">
+              <div className="text-white text-sm font-medium group-hover:text-amber-400 transition-colors">
+                {option.name}
+              </div>
+              <div className="text-gray-500 text-xs mt-0.5">
+                {option.description}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 // Main Sidebar Component
 export default function Sidebar({ activeItem, onItemClick, gameState, setGameState }) {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [openSettingsDropdown, setOpenSettingsDropdown] = useState(false);
+  const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [showCreateLobby, setShowCreateLobby] = useState(false);
   const [showQuickMatch, setShowQuickMatch] = useState(false);
   const timeoutRef = useRef(null);
+  const settingsButtonRef = useRef(null);
+  const profileButtonRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -3094,6 +3257,24 @@ export default function Sidebar({ activeItem, onItemClick, gameState, setGameSta
     }
   }, [location.state, setGameState, gameState]);
 
+
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (settingsButtonRef.current && !settingsButtonRef.current.contains(event.target)) {
+        setOpenSettingsDropdown(false);
+      }
+      if (profileButtonRef.current && !profileButtonRef.current.contains(event.target)) {
+        setOpenProfileDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const menuItems = [
     { name: "Play", icon: <Gamepad2 size={15} />, hasDropdown: true },
     { name: "Puzzles", icon: <Puzzle size={15} /> },
@@ -3103,19 +3284,50 @@ export default function Sidebar({ activeItem, onItemClick, gameState, setGameSta
     { name: "More", icon: <MoreHorizontal size={15} /> },
   ];
 
-  const bottomItems = [
-    { name: "Dark mode", icon: <Moon size={15} /> },
-    { name: "Settings", icon: <Settings size={15} /> },
-    { name: "Support", icon: <LifeBuoy size={15} /> },
-  ];
+ const bottomItems = [
+  { name: "Notification", icon: <Bell size={15} /> },
+  { name: "Dark mode", icon: <Moon size={15} /> },
+  { name: "Profile", icon: <UserCircle size={15} /> }, // Add Profile here
+  { name: "Settings", icon: <Settings size={15} /> },
+  { name: "Support", icon: <LifeBuoy size={15} /> },
+];
 
   const handleBottomItemClick = (itemName) => {
     if (itemName === "Settings") {
-      navigate('/settings');
+      setOpenSettingsDropdown(!openSettingsDropdown);
+      setOpenProfileDropdown(false);
+    } else if (itemName === "Profile") {
+      setOpenProfileDropdown(!openProfileDropdown);
+      setOpenSettingsDropdown(false);
     } else if (itemName === "Support") {
-      navigate('/support');
+      onItemClick("Support");
     }
   };
+
+  const handleSettingsSelect = (action) => {
+    if (action === "language") {
+      onItemClick("Language Settings");
+    } else if (action === "sound") {
+      onItemClick("Sound Settings");
+    } else if (action === "background") {
+      onItemClick("Background Settings");
+    } else if (action === "board") {
+      onItemClick("Board Settings");
+      navigate('/board-style');
+    }
+  };
+  const handleProfileSelect = (action) => {
+    if (action === "view-profile") {
+      onItemClick("View Profile");
+      navigate('/profile');
+    } else if (action === "signout") {
+      onItemClick("Sign Out");
+      // Add your sign out logic here
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
+  };
+
 
   const handleMouseEnter = (itemName) => {
     if (timeoutRef.current) {
@@ -3320,14 +3532,41 @@ export default function Sidebar({ activeItem, onItemClick, gameState, setGameSta
         })}
       </nav>
 
-      <div className="px-4 pb-8 space-y-0 pt-4 mt-4 text-sm">
+      <div className="px-4 pb-8 space-y-0 pt-4 mt-4 text-sm relative">
         {bottomItems.map((item) => (
-          <BottomItem 
+          <div
             key={item.name}
-            icon={item.icon} 
-            label={item.name}
-            onClick={() => handleBottomItemClick(item.name)}
-          />
+            ref={
+              item.name === "Settings" ? settingsButtonRef : 
+              item.name === "Profile" ? profileButtonRef : 
+              null
+            }
+            className="relative"
+          >
+            <BottomItem 
+              icon={item.icon} 
+              label={item.name}
+              onClick={() => handleBottomItemClick(item.name)}
+            />
+            
+            {/* Settings Dropdown */}
+            {item.name === "Settings" && (
+              <SettingsDropdown 
+                isOpen={openSettingsDropdown}
+                onClose={() => setOpenSettingsDropdown(false)}
+                onSelect={handleSettingsSelect}
+              />
+            )}
+
+            {/* Profile Dropdown */}
+            {item.name === "Profile" && (
+              <ProfileDropdown 
+                isOpen={openProfileDropdown}
+                onClose={() => setOpenProfileDropdown(false)}
+                onSelect={handleProfileSelect}
+              />
+            )}
+          </div>
         ))}
       </div>
 

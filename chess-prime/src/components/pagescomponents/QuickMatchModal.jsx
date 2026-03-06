@@ -816,7 +816,9 @@ export default function QuickMatchModal({ isOpen, onClose }) {
             <p className="text-center text-gray-500 text-xs">
               Starting game...
             </p>
-          </div>
+          </div> 
+
+          
         )}
       </div>
     </div>

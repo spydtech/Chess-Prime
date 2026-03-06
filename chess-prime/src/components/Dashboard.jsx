@@ -219,7 +219,7 @@ export default function Dashboard() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 h-full w-full  overflow-hidden">
+      <div className="flex-1  h-auto w-full  overflow-hidden">
         {renderComponent()}
       </div>
 
