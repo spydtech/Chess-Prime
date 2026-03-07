@@ -97,11 +97,12 @@
 //   );
 // };
 
-
+const SOCKET_URL = 'http://localhost:5000'; // Replace with your actual socket URL
 
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
+import profileService from '../services/profileService';
 import api from '../services/api';
 import { io } from 'socket.io-client';
 
@@ -120,6 +121,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [socket, setSocket] = useState(null);
+   const [profileCompletion, setProfileCompletion] = useState(0);
 
   // useEffect(() => {
   //   const initAuth = async () => {
@@ -151,15 +153,23 @@ export const AuthProvider = ({ children }) => {
         try {
           const response = await authService.getCurrentUser();
           setUser(response.user);
+          // Fetch profile completion
+          try {
+            const completion = await profileService.getProfileCompletion();
+            setProfileCompletion(completion.completion);
+          } catch (profileError) {
+            console.error('Error fetching profile completion:', profileError);
+          }
           
           // Initialize socket connection
-          const newSocket = io('http://localhost:5000', {
+        // Initialize socket connection
+          const newSocket = io(SOCKET_URL, {
             transports: ['websocket'],
             withCredentials: true
           });
           
           newSocket.on('connect', () => {
-            newSocket.emit('authenticate', { userId: response.user.id, token });
+            newSocket.emit('authenticate', { userId: response.id, token });
           });
           
           setSocket(newSocket);
@@ -184,10 +194,11 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await authService.register(userData);
       setUser(response.user);
-        const newSocket = io('http://localhost:5000', {
-        transports: ['websocket'],
-        withCredentials: true
-      });
+       // Initialize socket connection
+          const newSocket = io(SOCKET_URL, {
+            transports: ['websocket'],
+            withCredentials: true
+          });
       
       newSocket.on('connect', () => {
         newSocket.emit('authenticate', { userId: response.user.id, token: response.token });
@@ -206,10 +217,19 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await authService.login(credentials);
       setUser(response.user);
-       const newSocket = io('http://localhost:5000', {
-        transports: ['websocket'],
-        withCredentials: true
-      });
+      // Fetch profile completion after login
+      try {
+        const completion = await profileService.getProfileCompletion();
+        setProfileCompletion(completion.completion);
+      } catch (profileError) {
+        console.error('Error fetching profile completion:', profileError);
+      }
+      
+      // Initialize socket connection
+          const newSocket = io(SOCKET_URL, {
+            transports: ['websocket'],
+            withCredentials: true
+          });
       
       newSocket.on('connect', () => {
         newSocket.emit('authenticate', { userId: response.user.id, token: response.token });
@@ -241,6 +261,153 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
+   // Profile Methods
+  const updateProfile = async (profileData) => {
+    try {
+      setError(null);
+      const response = await profileService.updateProfile(profileData);
+      
+      // Update user in state and localStorage
+      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Update profile completion
+      try {
+        const completion = await profileService.getProfileCompletion();
+        setProfileCompletion(completion.completion);
+      } catch (profileError) {
+        console.error('Error fetching profile completion:', profileError);
+      }
+      
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to update profile');
+      throw error;
+    }
+  };
+
+  const changeName = async (newName) => {
+    try {
+      setError(null);
+      const response = await profileService.changeName(newName);
+      
+      // Update user in state and localStorage
+      const updatedUser = { ...user, name: response.name };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to change name');
+      throw error;
+    }
+  };
+
+  const changePassword = async (passwordData) => {
+    try {
+      setError(null);
+      const response = await profileService.changePassword(passwordData);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to change password');
+      throw error;
+    }
+  };
+
+  const changeEmail = async (newEmail) => {
+    try {
+      setError(null);
+      const response = await profileService.changeEmail(newEmail);
+      
+      // Update user in state and localStorage
+      const updatedUser = { ...user, email: response.email };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to change email');
+      throw error;
+    }
+  };
+
+  const toggleKidMode = async () => {
+    try {
+      setError(null);
+      const response = await profileService.toggleKidMode();
+      
+      // Update user in state and localStorage
+      const updatedUser = { ...user, kidMode: response.kidMode };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to toggle kid mode');
+      throw error;
+    }
+  };
+
+  const updateSettings = async (settings) => {
+    try {
+      setError(null);
+      const response = await profileService.updateSettings(settings);
+      
+      // Update user in state and localStorage
+      const updatedUser = { ...user, settings: response.settings };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to update settings');
+      throw error;
+    }
+  };
+
+  const closeAccount = async (password) => {
+    try {
+      setError(null);
+      const response = await profileService.closeAccount(password);
+      logout(); // Logout after closing account
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to close account');
+      throw error;
+    }
+  };
+
+  const refreshProfileCompletion = async () => {
+    try {
+      const completion = await profileService.getProfileCompletion();
+      setProfileCompletion(completion.completion);
+      return completion.completion;
+    } catch (error) {
+      console.error('Error refreshing profile completion:', error);
+      throw error;
+    }
+  };
+
+  // const updateChessExperience = async (experienceId) => {
+  //   try {
+  //     setError(null);
+  //     const response = await api.put('/auth/chess-experience', { 
+  //       chessExperience: experienceId 
+  //     });
+      
+  //     // Update user in state and localStorage
+  //     setUser(response.data.user);
+  //     localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+  //     return response.data;
+  //   } catch (error) {
+  //     setError(error.response?.data?.message || 'Failed to update chess experience');
+  //     throw error;
+  //   }
+  // };
+
+
   const logout = () => {
       if (socket) {
       socket.close();
@@ -266,11 +433,20 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
      socket,
+     profileCompletion,
     register,
     login,
     logout,
     forgotPassword,
     updateChessExperience,
+     updateProfile,
+    changeName,
+    changePassword,
+    changeEmail,
+    toggleKidMode,
+    updateSettings,
+    closeAccount,
+    refreshProfileCompletion,
     isAuthenticated: authService.isAuthenticated()
   };
 

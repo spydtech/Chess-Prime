@@ -147,6 +147,7 @@ import lobbyRoutes from './src/routes/lobbyRoutes.js';
 import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
 import computerRoutes from './src/routes/computerRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import profileRoutes  from './src/routes/profileRoutes.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './src/utils/socketHandlers.js';
@@ -247,6 +248,7 @@ app.use('/api/lobby', lobbyRoutes);
 app.use('/api/quick-match', quickMatchRoutes);
 app.use('/api/computer', computerRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
