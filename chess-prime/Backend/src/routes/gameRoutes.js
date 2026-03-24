@@ -28,6 +28,12 @@
 
 import express from 'express';
 import {
+  getGameHistory,
+  getActiveGames,
+  resignGame,
+  offerDraw,
+  acceptDraw,
+  declineDraw,
   createGame,
   getGame,
   makeMove,
@@ -37,6 +43,13 @@ import {
 import auth from '../middleware/auth.js';
 
 const router = express.Router();
+router.get('/user/history', auth, getGameHistory);
+router.get('/user/active', auth, getActiveGames);  
+// router.get('/:gameId', auth, getGameById);
+router.post('/:gameId/resign', auth, resignGame);
+router.post('/:gameId/draw-offer', auth, offerDraw);
+router.post('/:gameId/draw-accept', auth, acceptDraw);
+router.post('/:gameId/draw-decline', auth, declineDraw);
 
 router.post('/', auth, createGame);
 router.get('/:gameId', auth, getGame);

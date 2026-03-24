@@ -755,10 +755,7 @@
 //   );
 // }
 
-
-
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Zap,
   Clock,
@@ -778,13 +775,13 @@ function Card({ icon, title, time, players, onClick, disabled }) {
   return (
     <div 
       onClick={!disabled ? onClick : undefined}
-      className={`bg-[#120b06] border border-amber-500/30 rounded-xl p-5 
+      className={`bg-[#120b06] border border-amber-500/30 rounded-xl p-4 sm:p-5 
         ${!disabled ? 'hover:border-amber-400 hover:bg-amber-500/5 cursor-pointer' : 'opacity-50 cursor-not-allowed'} 
         transition-all group`}
     >
       <div className="flex items-center gap-2 text-amber-400">
         {icon}
-        <span className="font-semibold text-sm tracking-wide">{title} {time}</span>
+        <span className="font-semibold text-xs sm:text-sm tracking-wide">{title} {time}</span>
       </div>
 
       <div className="mt-3 text-xs text-gray-400 flex items-center gap-1">
@@ -805,15 +802,23 @@ export default function TimeControlPage() {
     loading, 
     error,
     createLobby,
-    joinQuickMatch 
+    joinQuickMatch,
+    loadActiveGames,
+    activeGames
   } = useGame();
 
-  const tabs = ["Quick playing", "Lobby", "Correspondence", "Message"];
+  const tabs = ["Quick playing", "Lobby"];
   const [activeTab, setActiveTab] = useState("Quick playing");
   const [gameMode, setGameMode] = useState(location.state?.gameMode || 'online');
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
   const [showDifficultySelect, setShowDifficultySelect] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [lobbies, setLobbies] = useState([]);
+  const [loadingLobbies, setLoadingLobbies] = useState(false);
+  
+  // Use refs to prevent infinite loops
+  const hasFetchedLobbies = useRef(false);
+  const prevActiveGamesRef = useRef([]);
 
   const sections = [
     {
@@ -846,6 +851,57 @@ export default function TimeControlPage() {
     },
   ];
 
+  // Fetch active lobbies when Lobby tab is active - using useCallback to memoize
+  const fetchLobbies = useCallback(async () => {
+    if (activeTab !== "Lobby") return;
+    
+    setLoadingLobbies(true);
+    try {
+      await loadActiveGames();
+      // Don't set lobbies here - let the useEffect below handle it
+    } catch (error) {
+      console.error('Error fetching lobbies:', error);
+    } finally {
+      setLoadingLobbies(false);
+    }
+  }, [activeTab, loadActiveGames]);
+
+  // Effect to trigger fetch when tab changes
+  useEffect(() => {
+    if (activeTab === "Lobby" && !hasFetchedLobbies.current) {
+      hasFetchedLobbies.current = true;
+      fetchLobbies();
+    }
+    
+    // Reset the ref when leaving lobby tab
+    return () => {
+      if (activeTab !== "Lobby") {
+        hasFetchedLobbies.current = false;
+      }
+    };
+  }, [activeTab, fetchLobbies]);
+
+  // Separate effect to update lobbies when activeGames changes
+  useEffect(() => {
+    if (activeTab === "Lobby") {
+      // Only update if activeGames actually changed
+      const gamesChanged = JSON.stringify(prevActiveGamesRef.current) !== JSON.stringify(activeGames);
+      
+      if (gamesChanged) {
+        console.log('Active games loaded:', activeGames);
+        
+        // Filter games that are in 'waiting' status (these are lobbies)
+        // Changed from 'active' to 'waiting' based on your schema
+        const activeLobbies = activeGames.filter(game => 
+          game.gameType === 'lobby'
+        );
+        
+        setLobbies(activeLobbies);
+        prevActiveGamesRef.current = activeGames;
+      }
+    }
+  }, [activeGames, activeTab]);
+
   const generateLobbyCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
@@ -860,7 +916,6 @@ export default function TimeControlPage() {
         
         if (result.success) {
           console.log('Game started successfully:', result.game);
-          // Navigate to game page with the game data
           navigate(`/game/vs-computer/${timeControl}`, { 
             state: { 
               gameData: result.game,
@@ -896,7 +951,11 @@ export default function TimeControlPage() {
 
   const handleCreateLobby = async () => {
     try {
-      const result = await createLobby('standard', '10+0', false);
+      const result = await createLobby({
+        gameType: 'standard',
+        timeControl: '10+0',
+        isPrivate: false
+      });
       if (result.success) {
         navigate('/', { state: { showLobby: true } });
       }
@@ -906,79 +965,62 @@ export default function TimeControlPage() {
     }
   };
 
-  // Sample lobbies data
-  const availableLobbies = [
-    {
-      id: 1,
-      lobbyCode: 'ABCD12',
-      gameType: 'online',
-      timeControl: '10+0',
-      players: [
-        { name: 'Player1', rating: 1400, ready: true },
-        { name: 'Player2', rating: 1350, ready: false }
-      ]
-    },
-    {
-      id: 2,
-      lobbyCode: 'EFGH34',
-      gameType: 'online',
-      timeControl: '5+0',
-      players: [
-        { name: 'Player3', rating: 1600, ready: true }
-      ]
-    },
-    {
-      id: 3,
-      lobbyCode: 'IJKL56',
-      gameType: 'online',
-      timeControl: '3+2',
-      players: [
-        { name: 'Player4', rating: 1550, ready: true },
-        { name: 'Player5', rating: 1500, ready: true }
-      ]
-    }
-  ];
-
   const handleJoinLobby = (lobby) => {
     navigate('/', { state: { lobbyData: lobby, showLobby: true } });
+  };
+
+  // Format lobby display from game data
+  const formatLobbyFromGame = (game) => {
+    return {
+      id: game._id || game.gameId,
+      lobbyCode: game.gameId?.substring(0, 6).toUpperCase() || 'LOBBY',
+      gameType: game.gameType,
+      timeControl: `${game.timeControl?.initial || 10}+${game.timeControl?.increment || 0}`,
+      players: game.players?.map(p => ({
+        name: p.username || 'Player',
+        rating: p.rating || 1200,
+        ready: p.ready || false // Add ready status if available
+      })) || [],
+      status: game.status
+    };
   };
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#0f0703]">
       {/* Back Button */}
-      <div className="pt-4 px-10">
+      <div className="pt-3 sm:pt-4 px-4 sm:px-6 lg:px-10">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition"
           disabled={isStarting}
         >
-          <ArrowLeft size={18} />
-          <span>Back</span>
+          <ArrowLeft size={16} />
+          <span className="text-sm sm:text-base">Back</span>
         </button>
       </div>
 
       {/* Fixed Header Section */}
-      <div className="pt-4 pb-4 px-10">
-        <h1 className="text-4xl font-bold text-center">
+      <div className="pt-3 sm:pt-4 pb-3 sm:pb-4 px-4 sm:px-6 lg:px-10">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center">
           Choose your <span className="text-amber-400">Time Control</span>
         </h1>
 
-        <p className="text-center text-gray-400 mt-2 text-lg">
+        <p className="text-center text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base lg:text-lg">
           Select your Game mode and start playing instantly
         </p>
 
         {/* Game Mode Toggle */}
-        <div className="flex justify-center mt-6 gap-4">
+        <div className="flex flex-col sm:flex-row justify-center mt-4 sm:mt-6 gap-3 sm:gap-4 px-4">
           <button
             onClick={() => setGameMode('online')}
             disabled={isStarting}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition ${
+            className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition text-sm sm:text-base ${
               gameMode === 'online' 
                 ? 'bg-amber-500 text-black' 
                 : 'bg-[#2a1a13] text-gray-400 hover:text-white'
             } ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Swords size={18} />
+            <Swords size={16} />
             Play Online
           </button>
           <button
@@ -987,27 +1029,27 @@ export default function TimeControlPage() {
               setShowDifficultySelect(true);
             }}
             disabled={isStarting}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition ${
+            className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition text-sm sm:text-base ${
               gameMode === 'vs-computer' 
                 ? 'bg-amber-500 text-black' 
                 : 'bg-[#2a1a13] text-gray-400 hover:text-white'
             } ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Bot size={18} />
+            <Bot size={16} />
             vs Computer
           </button>
         </div>
 
         {/* Difficulty Selection (for vs Computer) */}
         {gameMode === 'vs-computer' && showDifficultySelect && (
-          <div className="flex justify-center mt-4">
-            <div className="bg-[#2a1a13] rounded-lg p-2 flex flex-wrap gap-2">
+          <div className="flex justify-center mt-3 sm:mt-4 px-4">
+            <div className="bg-[#2a1a13] rounded-lg p-2 flex flex-wrap gap-1 sm:gap-2 justify-center">
               {computerDifficulties.map((diff) => (
                 <button
                   key={diff.id}
                   onClick={() => setSelectedDifficulty(diff.id)}
                   disabled={isStarting}
-                  className={`px-4 py-2 rounded-lg text-sm capitalize transition ${
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm capitalize transition ${
                     selectedDifficulty === diff.id
                       ? 'bg-amber-500 text-black'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -1022,14 +1064,14 @@ export default function TimeControlPage() {
         )}
 
         {/* TABS */}
-        <div className="flex justify-center mt-8">
-          <div className="bg-[#2a2522] rounded-full p-1.5 flex gap-1">
+        <div className="flex justify-center mt-4 sm:mt-8 px-4">
+          <div className="bg-[#2a2522] rounded-full p-1 flex flex-wrap justify-center gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 disabled={isStarting}
-                className={`px-6 py-2.5 rounded-full text-base font-medium transition ${
+                className={`px-3 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-base font-medium transition whitespace-nowrap ${
                   activeTab === tab
                     ? "bg-black text-amber-400"
                     : "text-gray-400 hover:text-white"
@@ -1043,8 +1085,8 @@ export default function TimeControlPage() {
 
         {/* Active Tab Content Indicator */}
         {activeTab === "Lobby" && (
-          <div className="mt-4 text-center">
-            <p className="text-amber-400 text-sm">
+          <div className="mt-3 sm:mt-4 text-center px-4">
+            <p className="text-amber-400 text-xs sm:text-sm">
               Browse available lobbies or create your own
             </p>
           </div>
@@ -1054,31 +1096,31 @@ export default function TimeControlPage() {
       {/* Loading Overlay */}
       {isStarting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#1a0f0a] rounded-lg p-8 flex flex-col items-center">
-            <Loader className="animate-spin text-amber-400 mb-4" size={48} />
-            <p className="text-white">Starting game...</p>
+          <div className="bg-[#1a0f0a] rounded-lg p-6 sm:p-8 flex flex-col items-center mx-4">
+            <Loader className="animate-spin text-amber-400 mb-4" size={32} />
+            <p className="text-white text-sm sm:text-base">Starting game...</p>
           </div>
         </div>
       )}
 
       {/* Error Display */}
       {error && (
-        <div className="mx-10 mb-4 bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
+        <div className="mx-4 sm:mx-6 lg:mx-10 mb-4 bg-red-500/20 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
           {error}
         </div>
       )}
 
       {/* Scrollable Cards Section */}
-      <div className="flex-1 overflow-y-auto px-10 pb-10 custom-scrollbar">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-10 pb-6 sm:pb-10 custom-scrollbar">
+        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
           {activeTab === "Quick playing" && (
             sections.map((section) => (
               <div key={section.title}>
-                <p className="text-gray-400 mb-4 text-base font-medium">
+                <p className="text-gray-400 mb-3 sm:mb-4 text-xs sm:text-base font-medium">
                   {section.title} • {section.description}
                 </p>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {section.items.map((item, idx) => (
                     <Card
                       key={item}
@@ -1096,73 +1138,77 @@ export default function TimeControlPage() {
           )}
 
           {activeTab === "Lobby" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-white text-lg font-semibold">Available Lobbies</h3>
-                <button
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                <h3 className="text-white text-base sm:text-lg font-semibold">Available Lobbies</h3>
+                {/* <button
                   onClick={handleCreateLobby}
                   disabled={isStarting}
-                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-4 py-2 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"
+                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center gap-2 disabled:opacity-50 w-full sm:w-auto justify-center"
                 >
-                  <Swords size={16} />
+                  <Swords size={14} />
                   Create New Lobby
-                </button>
+                </button> */}
               </div>
               
-              <div className="grid gap-4">
-                {availableLobbies.map((lobby) => (
-                  <div 
-                    key={lobby.id}
-                    onClick={() => !isStarting && handleJoinLobby(lobby)}
-                    className="bg-[#120b06] border border-amber-500/30 rounded-lg p-4 hover:border-amber-400 cursor-pointer transition-all disabled:opacity-50"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-amber-400 font-mono font-bold">{lobby.lobbyCode}</span>
-                        <span className="text-gray-500 text-xs">•</span>
-                        <span className="text-gray-400 text-sm">{lobby.timeControl}</span>
-                      </div>
-                      <span className="text-gray-400 text-sm">
-                        {lobby.players.length}/2 players
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {lobby.players.map((player, idx) => (
-                          <div key={idx} className="flex items-center gap-1">
-                            <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center">
-                              <span className="text-amber-400 text-xs">
-                                {player.name.charAt(0)}
-                              </span>
-                            </div>
-                            <span className="text-gray-300 text-sm">{player.rating}</span>
+              {loadingLobbies ? (
+                <div className="flex justify-center py-8">
+                  <Loader className="animate-spin text-amber-400" size={32} />
+                </div>
+              ) : lobbies.length > 0 ? (
+                <div className="grid gap-3 sm:gap-4">
+                  {lobbies.map((lobby) => {
+                    const formattedLobby = formatLobbyFromGame(lobby);
+                    return (
+                      <div 
+                        key={formattedLobby.id}
+                        // onClick={() => !isStarting && handleJoinLobby(formattedLobby)}
+                        className="bg-[#120b06] border border-amber-500/30 rounded-lg p-3 sm:p-4 hover:border-amber-400 cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-2">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                            <span className="text-amber-400 font-mono font-bold text-sm sm:text-base">
+                              {formattedLobby.lobbyCode}
+                            </span>
+                            <span className="text-gray-500 text-xs">•</span>
+                            <span className="text-gray-400 text-xs sm:text-sm">
+                              {formattedLobby.timeControl}
+                            </span>
                           </div>
-                        ))}
-                        {lobby.players.length < 2 && (
-                          <span className="text-gray-500 text-sm ml-2">(Waiting...)</span>
-                        )}
+                          <span className="text-gray-400 text-xs sm:text-sm">
+                            {formattedLobby.players.length}/2 players
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {formattedLobby.players.map((player, idx) => (
+                              <div key={idx} className="flex items-center gap-1">
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-500/20 rounded-full flex items-center justify-center">
+                                  <span className="text-amber-400 text-xs">
+                                    {player.name.charAt(0)}
+                                  </span>
+                                </div>
+                                <span className="text-gray-300 text-xs sm:text-sm">{player.rating}</span>
+                              </div>
+                            ))}
+                            {formattedLobby.players.length < 2 && (
+                              <span className="text-gray-500 text-xs sm:text-sm ml-1 sm:ml-2">(Waiting...)</span>
+                            )}
+                          </div>
+                          <button className="bg-amber-500 hover:bg-amber-600 text-black px-3 sm:px-4 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-medium w-full sm:w-auto">
+                            {formattedLobby.status}
+                          </button>
+                        </div>
                       </div>
-                      <button className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-1.5 rounded text-sm font-medium">
-                        Join
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "Correspondence" && (
-            <div className="text-center text-gray-400 py-10">
-              <p className="text-lg">Correspondence games appear here</p>
-              <p className="text-sm mt-2">Play games over days or weeks</p>
-            </div>
-          )}
-
-          {activeTab === "Message" && (
-            <div className="text-center text-gray-400 py-10">
-              <p className="text-lg">Messages and notifications appear here</p>
-              <p className="text-sm mt-2">Stay updated with your games</p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-gray-400 py-8 bg-[#120b06] rounded-lg border border-amber-500/30">
+                  <p className="text-sm sm:text-base">No active lobbies found</p>
+                  <p className="text-xs sm:text-sm mt-1">Create a new lobby to start playing</p>
+                </div>
+              )}
             </div>
           )}
         </div>

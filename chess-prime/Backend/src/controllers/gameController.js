@@ -464,3 +464,213 @@ export const getUserGames = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getActiveGames = async (req, res) => {
+  try {
+    const games = await Game.find({
+      'players.userId': req.user._id,
+      // status: 'active'
+    })
+    .sort({ startedAt: -1 })
+    .limit(10);
+    
+    res.json({ games });
+  } catch (error) {
+    console.error('Get active games error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getGameHistory = async (req, res) => {
+  try {
+    const games = await Game.find({
+      'players.userId': req.user._id,
+      status: 'completed'
+    })
+    .sort({ endedAt: -1 })
+    .limit(50);
+    
+    res.json({ games });
+  } catch (error) {
+    console.error('Get game history error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getGameById = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const game = await Game.findOne({ gameId })
+      .populate('players.userId', 'name rating');
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    res.json({ game });
+  } catch (error) {
+    console.error('Get game error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resignGame = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const game = await Game.findOne({ gameId });
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    const player = game.players.find(p => p.userId.toString() === req.user._id.toString());
+    if (!player) {
+      return res.status(403).json({ message: 'Not a player in this game' });
+    }
+    
+    const winner = player.color === 'white' ? 'black' : 'white';
+    
+    game.status = 'completed';
+    game.result = winner;
+    game.termination = 'resignation';
+    game.endedAt = new Date();
+    
+    await game.save();
+    
+    // Notify opponent
+    const io = req.app.get('io');
+    const opponent = game.players.find(p => p.userId.toString() !== req.user._id.toString());
+    if (opponent) {
+      io.to(`user-${opponent.userId}`).emit('game-completed', {
+        gameId: game.gameId,
+        result: winner,
+        termination: 'resignation'
+      });
+    }
+    
+    res.json({ 
+      message: 'Game resigned',
+      result: winner 
+    });
+  } catch (error) {
+    console.error('Resign game error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const offerDraw = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const game = await Game.findOne({ gameId });
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    const io = req.app.get('io');
+    const opponent = game.players.find(p => p.userId.toString() !== req.user._id.toString());
+    
+    if (opponent) {
+      io.to(`user-${opponent.userId}`).emit('draw-offer', {
+        gameId: game.gameId,
+        fromPlayer: req.user.name
+      });
+    }
+    
+    res.json({ message: 'Draw offer sent' });
+  } catch (error) {
+    console.error('Offer draw error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const acceptDraw = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const game = await Game.findOne({ gameId });
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    game.status = 'completed';
+    game.result = 'draw';
+    game.termination = 'agreement';
+    game.endedAt = new Date();
+    
+    await game.save();
+    
+    // Notify both players
+    const io = req.app.get('io');
+    game.players.forEach(player => {
+      io.to(`user-${player.userId}`).emit('game-completed', {
+        gameId: game.gameId,
+        result: 'draw',
+        termination: 'agreement'
+      });
+    });
+    
+    res.json({ 
+      message: 'Draw accepted',
+      result: 'draw' 
+    });
+  } catch (error) {
+    console.error('Accept draw error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const declineDraw = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    const game = await Game.findOne({ gameId });
+    
+    if (!game) {
+      return res.status(404).json({ message: 'Game not found' });
+    }
+    
+    const io = req.app.get('io');
+    const opponent = game.players.find(p => p.userId.toString() !== req.user._id.toString());
+    
+    if (opponent) {
+      io.to(`user-${opponent.userId}`).emit('draw-declined', {
+        gameId: game.gameId
+      });
+    }
+    
+    res.json({ message: 'Draw declined' });
+  } catch (error) {
+    console.error('Decline draw error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// export const endGame = async (req, res) => {
+//   try {
+//     const { gameId } = req.params;
+//     const { result, termination } = req.body;
+    
+//     const game = await Game.findOne({ gameId });
+    
+//     if (!game) {
+//       return res.status(404).json({ message: 'Game not found' });
+//     }
+    
+//     game.status = 'completed';
+//     game.result = result;
+//     game.termination = termination;
+//     game.endedAt = new Date();
+    
+//     await game.save();
+    
+//     res.json({ message: 'Game ended' });
+//   } catch (error) {
+//     console.error('End game error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };

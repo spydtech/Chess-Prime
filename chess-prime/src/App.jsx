@@ -15,8 +15,12 @@ import Boardstyle from "./components/BoardStyle"
 import Tournamentdashboard from "./components/MainPage"
 import Puzzles from "./components/pagescomponents/Puzzles";
 import Profile from "./components/Profile";
-import EditProfile from "./components/EditProfile"; // Add this import
+import EditProfile from "./components/EditProfile";
 import { AppProviders } from "./Provider/AppProviders";
+import PuzzleAdmin from "./components/pagescomponents/gamePages/PuzzleAdmin";
+import Social from "./components/pagescomponents/Social";
+
+
 
 
 function App() {
@@ -52,6 +56,11 @@ function App() {
       errorElement: <ErrorElement />,
     },
     {
+      path: "/social",
+      element: <Social />,
+      errorElement: <ErrorElement />,
+    },
+    {
       path: "/board-style",
       element: <Boardstyle />,
       errorElement: <ErrorElement />,
@@ -71,12 +80,12 @@ function App() {
       element: <Dashboard />,
       errorElement: <ErrorElement />,
     },
-     {
+    {
       path: "/profile",
       element: (
-        <DashboardLayout>
+       // <DashboardLayout>
           <Profile />
-        </DashboardLayout>
+       // </DashboardLayout>
       ),
       errorElement: <ErrorElement />,
     },
@@ -90,6 +99,11 @@ function App() {
       errorElement: <ErrorElement />,
     },
     {
+      path: "/puzzlesAdmin",
+      element: <PuzzleAdmin />,
+      errorElement: <ErrorElement />,
+    },
+    {
       path: "/time-control",
       element: (
         <DashboardLayout>
@@ -98,18 +112,16 @@ function App() {
       ),
       errorElement: <ErrorElement />,
     },
+    // Keep the existing dynamic route for mode-based games
     {
       path: "/game/:mode/:timeControl?",
       element: <GamePage />,
       errorElement: <ErrorElement />,
     },
+    // 🔥 ADD THIS NEW ROUTE FOR SPECIFIC GAME IDs (for lobby auto-start)
     {
-      path: "/profile",
-      element: (
-        <DashboardLayout>
-          <div className="flex-1 p-10 text-white">Profile Page Content</div>
-        </DashboardLayout>
-      ),
+      path: "/game/:gameId",
+      element: <GamePage />,
       errorElement: <ErrorElement />,
     },
     {
@@ -123,7 +135,6 @@ function App() {
     }
   ]);
 
-  // Wrap RouterProvider with AuthProvider
   return (
     <AppProviders>
       <RouterProvider router={router} />

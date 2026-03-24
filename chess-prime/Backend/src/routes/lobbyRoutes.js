@@ -25,18 +25,28 @@ import {
   toggleReady,
   inviteUser,
   leaveLobby,
-  startGame
+  searchUsers,
+  startGame,
+  getLobbyInvites,
+  acceptLobbyInvite
 } from '../controllers/lobbyController.js';
 import auth from '../middleware/auth.js';
-
+ 
 const router = express.Router();
-
 router.post('/', auth, createLobby);
+ 
+router.get("/invites", auth, getLobbyInvites);
+router.get('/search', auth, searchUsers);
+ 
 router.get('/:lobbyCode', auth, getLobby);
 router.post('/:lobbyCode/join', auth, joinLobby);
 router.put('/:lobbyCode/ready', auth, toggleReady);
 router.post('/:lobbyCode/invite', auth, inviteUser);
 router.delete('/:lobbyCode/leave', auth, leaveLobby);
 router.post('/:lobbyCode/start', auth, startGame);
+
+ 
+router.post('/:lobbyCode/accept-invite', auth, acceptLobbyInvite);
+
 
 export default router;

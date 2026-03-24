@@ -41,11 +41,13 @@ const lobbySchema = new mongoose.Schema({
     ready: { type: Boolean, default: false },
     joinedAt: { type: Date, default: Date.now }
   }],
+  
   invitedUsers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }]
 }, { timestamps: true });
+
 
 // Remove duplicate lobbyCode index - it's already created by unique: true
 // Keep only this index

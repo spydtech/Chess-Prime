@@ -1,3 +1,160 @@
+// server.js
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Import routes
+import authRoutes from './src/routes/authRoutes.js';
+import gameRoutes from './src/routes/gameRoutes.js';
+import lobbyRoutes from './src/routes/lobbyRoutes.js';
+import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
+import computerRoutes from './src/routes/computerRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import profileRoutes  from './src/routes/profileRoutes.js';
+import puzzleRoutes from './src/routes/puzzleRoutes.js';
+
+// Import socket handlers
+import { setupSocketHandlers } from './src/utils/socketHandlers.js';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const server = http.createServer(app);
+
+// CORS configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://localhost:3001",
+  "http://13.206.51.201",
+  "http://13.206.51.201:5173",
+  "http://13.206.51.201:5174"
+];
+
+// Socket.io setup with proper CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
+});
+
+// Make io accessible to routes/controllers
+app.set('io', io);
+
+// Express middleware
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      return callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      return callback(null, true); // Allow all origins in development
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Database connection with retry logic
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+    setTimeout(connectDB, 5000);
+  }
+};
+connectDB();
+
+// MongoDB event handlers
+mongoose.connection.on('connected', () => {
+  console.log('✅ MongoDB connected');
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('❌ MongoDB disconnected');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB error:', err);
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/games', gameRoutes);
+app.use('/api/lobby', lobbyRoutes);
+app.use('/api/quick-match', quickMatchRoutes);
+app.use('/api/computer', computerRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/puzzles', puzzleRoutes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// Setup socket handlers - Pass io instance
+setupSocketHandlers(io);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal server error'
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
 // import express from 'express';
 // import mongoose from 'mongoose';
 // import cors from 'cors';
@@ -14,6 +171,7 @@
 // import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
 // import computerRoutes from './src/routes/computerRoutes.js';
 // import userRoutes from './src/routes/userRoutes.js';
+// import profileRoutes  from './src/routes/profileRoutes.js';
 
 // // Import socket handlers
 // import { setupSocketHandlers } from './src/utils/socketHandlers.js';
@@ -44,6 +202,9 @@
 //   transports: ['websocket', 'polling']
 // });
 
+// // Make io accessible to routes/controllers
+// app.set('io', io);
+
 // // Express middleware
 // app.use(cors({
 //   origin: function(origin, callback) {
@@ -66,29 +227,39 @@
 //   next();
 // });
 
-// // Database connection
+// // Database connection with retry logic and SSL options
 // const connectDB = async () => {
 //   try {
 //     await mongoose.connect(process.env.MONGODB_URI, {
 //       serverSelectionTimeoutMS: 5000,
 //       socketTimeoutMS: 45000,
 //     });
-//     console.log('✅ MongoDB connected successfully');
+
+//     console.log("✅ MongoDB connected successfully");
 //   } catch (err) {
-//     console.error('❌ MongoDB connection error:', err.message);
-//     process.exit(1);
+//     console.error("❌ MongoDB connection error:", err.message);
+
+//     // retry after 5 seconds
+//     setTimeout(connectDB, 5000);
 //   }
 // };
-
 // connectDB();
 
 // // MongoDB event handlers
+// mongoose.connection.on('connected', () => {
+//   console.log('✅ MongoDB connected');
+// });
+
 // mongoose.connection.on('disconnected', () => {
 //   console.log('❌ MongoDB disconnected');
 // });
 
 // mongoose.connection.on('reconnected', () => {
 //   console.log('✅ MongoDB reconnected');
+// });
+
+// mongoose.connection.on('error', (err) => {
+//   console.error('❌ MongoDB error:', err);
 // });
 
 // // Routes
@@ -98,6 +269,7 @@
 // app.use('/api/quick-match', quickMatchRoutes);
 // app.use('/api/computer', computerRoutes);
 // app.use('/api/users', userRoutes);
+// app.use('/api/profile', profileRoutes);
 
 // // Health check
 // app.get('/health', (req, res) => {
@@ -115,8 +287,7 @@
 // app.use((err, req, res, next) => {
 //   console.error('❌ Error:', err.stack);
 //   res.status(err.status || 500).json({
-//     message: err.message || 'Internal server error',
-//     error: process.env.NODE_ENV === 'development' ? err.stack : {}
+//     message: err.message || 'Internal server error'
 //   });
 // });
 
@@ -130,153 +301,3 @@
 //   console.log(`🚀 Server running on port ${PORT}`);
 //   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 // });
-
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import http from 'http';
-import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Import routes
-import authRoutes from './src/routes/authRoutes.js';
-import gameRoutes from './src/routes/gameRoutes.js';
-import lobbyRoutes from './src/routes/lobbyRoutes.js';
-import quickMatchRoutes from './src/routes/quickMatchRoutes.js';
-import computerRoutes from './src/routes/computerRoutes.js';
-import userRoutes from './src/routes/userRoutes.js';
-import profileRoutes  from './src/routes/profileRoutes.js';
-
-// Import socket handlers
-import { setupSocketHandlers } from './src/utils/socketHandlers.js';
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-const server = http.createServer(app);
-
-// CORS configuration
-const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:5173",
-  "http://localhost:3000",
-  "http://localhost:5174",
-  "http://127.0.0.1:5173"
-];
-
-// Socket.io setup
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-  },
-  transports: ['websocket', 'polling']
-});
-
-// Make io accessible to routes/controllers
-app.set('io', io);
-
-// Express middleware
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'CORS policy does not allow access from this origin';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// Database connection with retry logic and SSL options
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      ssl: true,
-      tls: true,
-      tlsAllowInvalidCertificates: true,
-      tlsAllowInvalidHostnames: true,
-    });
-    console.log('✅ MongoDB connected successfully');
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
-    // Retry connection after 5 seconds
-    setTimeout(connectDB, 5000);
-  }
-};
-
-connectDB();
-
-// MongoDB event handlers
-mongoose.connection.on('connected', () => {
-  console.log('✅ MongoDB connected');
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('❌ MongoDB disconnected');
-});
-
-mongoose.connection.on('reconnected', () => {
-  console.log('✅ MongoDB reconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB error:', err);
-});
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/games', gameRoutes);
-app.use('/api/lobby', lobbyRoutes);
-app.use('/api/quick-match', quickMatchRoutes);
-app.use('/api/computer', computerRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/profile', profileRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-  });
-});
-
-// Setup socket handlers
-setupSocketHandlers(io);
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal server error'
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-});

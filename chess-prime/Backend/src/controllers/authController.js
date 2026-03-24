@@ -102,6 +102,7 @@ export const login = async (req, res) => {
         email: user.email,
         chessExperience: user.chessExperience,
         rating: user.rating,
+        settings:user.settings,
         gamesPlayed: user.gamesPlayed,
         gamesWon: user.gamesWon,
         gamesLost: user.gamesLost,
@@ -136,7 +137,7 @@ export const forgotPassword = async (req, res) => {
 };
 
 export const getCurrentUser = async (req, res) => {
-  try {
+  try { 
     const user = req.user;
     res.json({
       id: user._id,
@@ -144,6 +145,7 @@ export const getCurrentUser = async (req, res) => {
       email: user.email,
       chessExperience: user.chessExperience,
       rating: user.rating,
+      settings:user.settings,
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
       gamesLost: user.gamesLost,

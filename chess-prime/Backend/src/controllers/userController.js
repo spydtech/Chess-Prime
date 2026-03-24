@@ -17,6 +17,60 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+// In userController.js - Add this function
+
+export const searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({ 
+        message: 'Search query must be at least 2 characters' 
+      });
+    }
+    
+    // Search for users by name or email, excluding the current user
+    const users = await User.find({
+      $and: [
+        {
+          $or: [
+            { name: { $regex: query, $options: 'i' } },
+            { email: { $regex: query, $options: 'i' } },
+            { displayName: { $regex: query, $options: 'i' } }
+          ]
+        },
+        { _id: { $ne: req.user._id } } 
+      ]
+    })
+    .select('name displayName email rating isOnline lastSeen chessLevel')
+    .limit(10);
+    
+    // Format 
+    const formattedUsers = users.map(user => ({
+      _id: user._id,
+      name: user.name,
+      displayName: user.displayName || user.name,
+      email: user.email,
+      rating: user.rating,
+      isOnline: user.isOnline,
+      lastSeen: user.lastSeen,
+      chessLevel: user.chessLevel
+    }));
+    
+    res.json({ 
+      success: true,
+      users: formattedUsers,
+      count: formattedUsers.length
+    });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+};
+
 export const updateSettings = async (req, res) => {
   try {
     const { settings } = req.body;
