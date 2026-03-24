@@ -832,7 +832,8 @@ import profileService from '../services/profileService';
 import api from '../services/api';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000'; // Replace with your actual socket URL
+//const SOCKET_URL = 'http://localhost:5000'; // Replace with your actual socket URL
+const SOCKET_URL = 'https://api.chessverss.com'
 
 const AuthContext = createContext(null);
 
