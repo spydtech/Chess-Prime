@@ -826,14 +826,453 @@
 
 //testing
 // context/AuthContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
+// import authService from '../services/authService';
+// import profileService from '../services/profileService';
+// import api from '../services/api';
+// import { io } from 'socket.io-client';
+
+// const SOCKET_URL = 'http://localhost:5000'; // Replace with your actual socket URL
+// //const SOCKET_URL = 'https://api.chessverss.com'
+
+// const AuthContext = createContext(null);
+
+// export const useAuth = () => {
+//   const context = useContext(AuthContext);
+//   if (!context) {
+//     throw new Error('useAuth must be used within an AuthProvider');
+//   }
+//   return context;
+// };
+
+// export const AuthProvider = ({ children }) => {
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [socket, setSocket] = useState(null);
+//   const [profileCompletion, setProfileCompletion] = useState(0);
+  
+
+//   useEffect(() => {
+//     const initAuth = async () => {
+//       const storedUser = authService.getCurrentUserFromStorage();
+//       const token = authService.getToken();
+
+//       console.log('AuthProvider - Stored user:', storedUser);
+//       console.log('AuthProvider - Token exists:', !!token);
+
+//       if (storedUser && token) {
+//         try {
+//           // Verify the token and get fresh user data
+//           const response = await authService.getCurrentUser();
+//           console.log('AuthProvider - User data from API:', response);
+          
+//           // Set the user from the API response
+//           const userData = response.user || response;
+//           setUser(userData);
+          
+//           // Fetch profile completion
+//           try {
+//             const completion = await profileService.getProfileCompletion();
+//             setProfileCompletion(completion.completion);
+//           } catch (profileError) {
+//             console.error('Error fetching profile completion:', profileError);
+//           }
+          
+//           // Initialize socket connection
+//           const newSocket = io(SOCKET_URL, {
+//             transports: ['websocket'],
+//             withCredentials: true,
+//             query: {
+//               userId: userData._id || userData.id,
+//               token: token
+//             }
+//           });
+          
+//           newSocket.on('connect', () => {
+//             console.log('Socket connected in AuthProvider');
+//             newSocket.emit('authenticate', { 
+//               userId: userData._id || userData.id, 
+//               token 
+//             });
+//           });
+          
+//           setSocket(newSocket);
+//         } catch (error) {
+//           console.error('AuthProvider - Error fetching user:', error);
+//           authService.logout();
+//           setUser(null);
+//         }
+//       }
+//       setLoading(false);
+//     };
+
+//     initAuth();
+
+//     return () => {
+//       if (socket) {
+//         socket.close();
+//       }
+//     };
+//   }, []);
+
+//   const register = async (userData) => {
+//     try {
+//       setError(null);
+//       const response = await authService.register(userData);
+//       console.log('Register response:', response);
+      
+//       const userData_ = response.user || response;
+//       setUser(userData_);
+      
+//       // Initialize socket connection
+//       const token = authService.getToken();
+//       const newSocket = io(SOCKET_URL, {
+//         transports: ['websocket'],
+//         withCredentials: true,
+//         query: {
+//           userId: userData_._id || userData_.id,
+//           token: token
+//         }
+//       });
+      
+//       newSocket.on('connect', () => {
+//         newSocket.emit('authenticate', { 
+//           userId: userData_._id || userData_.id, 
+//           token 
+//         });
+//       });
+      
+//       setSocket(newSocket);
+//       return userData_;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Registration failed');
+//       throw error;
+//     }
+//   };
+
+//   // const login = async (credentials) => {
+//   //   try {
+//   //     setError(null);
+//   //     const response = await authService.login(credentials);
+//   //     console.log('Login response:', response);
+      
+//   //     const userData = response.user || response;
+//   //     setUser(userData);
+      
+//   //     // Fetch profile completion after login
+//   //     try {
+//   //       const completion = await profileService.getProfileCompletion();
+//   //       setProfileCompletion(completion.completion);
+//   //     } catch (profileError) {
+//   //       console.error('Error fetching profile completion:', profileError);
+//   //     }
+      
+//   //     // Initialize socket connection
+//   //     const token = authService.getToken();
+//   //     const newSocket = io(SOCKET_URL, {
+//   //       transports: ['websocket'],
+//   //       withCredentials: true,
+//   //       query: {
+//   //         userId: userData._id || userData.id,
+//   //         token: token
+//   //       }
+//   //     });
+      
+//   //     newSocket.on('connect', () => {
+//   //       newSocket.emit('authenticate', { 
+//   //         userId: userData._id || userData.id, 
+//   //         token 
+//   //       });
+//   //     });
+      
+//   //     setSocket(newSocket);
+//   //     return userData;
+//   //   } catch (error) {
+//   //     setError(error.response?.data?.message || 'Login failed');
+//   //     throw error;
+//   //   }
+//   // };
+//   // context/AuthContext.js - Update login function
+// const login = async (credentials) => {
+//   try {
+//     setError(null);
+//     const response = await authService.login(credentials);
+//     console.log('Login response:', response);
+    
+//     const userData = response.user || response;
+//     const token = authService.getToken(); // Get token AFTER login
+    
+//     console.log('Token after login:', !!token); // Debug log
+    
+//     setUser(userData);
+    
+//     // Fetch profile completion after login
+//     try {
+//       const completion = await profileService.getProfileCompletion();
+//       setProfileCompletion(completion.completion);
+//     } catch (profileError) {
+//       console.error('Error fetching profile completion:', profileError);
+//     }
+    
+//     // Only initialize socket if we have token AND userId
+//     if (token && (userData._id || userData.id)) {
+//       const userId = userData._id || userData.id;
+//       console.log('Initializing socket with userId:', userId, 'token exists:', !!token);
+      
+//       const newSocket = io(SOCKET_URL, {
+//         transports: ['websocket', 'polling'],
+//         withCredentials: true,
+//         auth: {
+//           token: token // Use auth instead of query for better security
+//         },
+//         query: {
+//           userId: userId
+//         },
+//         reconnection: true,
+//         reconnectionAttempts: 5,
+//         reconnectionDelay: 1000,
+//         timeout: 20000
+//       });
+      
+//       newSocket.on('connect', () => {
+//         console.log('Socket connected in AuthProvider');
+//         // Authenticate after connection
+//         newSocket.emit('authenticate', { 
+//           userId: userId, 
+//           token: token 
+//         });
+//       });
+      
+//       newSocket.on('authenticated', () => {
+//         console.log('Socket authenticated successfully');
+//       });
+      
+//       newSocket.on('connect_error', (error) => {
+//         console.error('Socket connection error:', error.message);
+//       });
+      
+//       setSocket(newSocket);
+//       socketRef.current = newSocket;
+//     } else {
+//       console.warn('Cannot initialize socket - missing token or userId');
+//     }
+    
+//     return userData;
+//   } catch (error) {
+//     console.error('Login error:', error);
+//     setError(error.response?.data?.message || 'Login failed');
+//     throw error;
+//   }
+// };
+
+//   const updateChessExperience = async (experienceId) => {
+//     try {
+//       setError(null);
+//       const response = await api.put('/auth/chess-experience', { 
+//         chessExperience: experienceId 
+//       });
+      
+//       // Update user in state and localStorage
+//       const updatedUser = response.data.user;
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       return response.data;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to update chess experience');
+//       throw error;
+//     }
+//   };
+
+//   // Profile Methods
+//   const updateProfile = async (profileData) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.updateProfile(profileData);
+      
+//       // Update user in state and localStorage
+//       const updatedUser = response.user;
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       // Update profile completion
+//       try {
+//         const completion = await profileService.getProfileCompletion();
+//         setProfileCompletion(completion.completion);
+//       } catch (profileError) {
+//         console.error('Error fetching profile completion:', profileError);
+//       }
+      
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to update profile');
+//       throw error;
+//     }
+//   };
+
+//   const changeName = async (newName) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.changeName(newName);
+      
+//       // Update user in state and localStorage
+//       const updatedUser = { ...user, name: response.name };
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to change name');
+//       throw error;
+//     }
+//   };
+
+//   const changePassword = async (passwordData) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.changePassword(passwordData);
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to change password');
+//       throw error;
+//     }
+//   };
+
+//   const changeEmail = async (newEmail) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.changeEmail(newEmail);
+      
+//       // Update user in state and localStorage
+//       const updatedUser = { ...user, email: response.email };
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to change email');
+//       throw error;
+//     }
+//   };
+
+//   const toggleKidMode = async () => {
+//     try {
+//       setError(null);
+//       const response = await profileService.toggleKidMode();
+      
+//       // Update user in state and localStorage
+//       const updatedUser = { ...user, kidMode: response.kidMode };
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to toggle kid mode');
+//       throw error;
+//     }
+//   };
+
+//   const updateSettings = async (settings) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.updateSettings(settings);
+      
+//       // Update user in state and localStorage
+//       const updatedUser = { ...user, settings: response.settings };
+//       setUser(updatedUser);
+//       localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to update settings');
+//       throw error;
+//     }
+//   };
+
+//   const closeAccount = async (password) => {
+//     try {
+//       setError(null);
+//       const response = await profileService.closeAccount(password);
+//       logout(); // Logout after closing account
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to close account');
+//       throw error;
+//     }
+//   };
+
+//   const refreshProfileCompletion = async () => {
+//     try {
+//       const completion = await profileService.getProfileCompletion();
+//       setProfileCompletion(completion.completion);
+//       return completion.completion;
+//     } catch (error) {
+//       console.error('Error refreshing profile completion:', error);
+//       throw error;
+//     }
+//   };
+
+//   const logout = () => {
+//     if (socket) {
+//       socket.close();
+//     }
+//     authService.logout();
+//     setUser(null);
+//     setSocket(null);
+//   };
+
+//   const forgotPassword = async (email) => {
+//     try {
+//       setError(null);
+//       const response = await authService.forgotPassword(email);
+//       return response;
+//     } catch (error) {
+//       setError(error.response?.data?.message || 'Failed to process request');
+//       throw error;
+//     }
+//   };
+
+//   // ✅ FIX: Added token to the context value
+//   const value = {
+//     user,
+//     loading,
+//     error,
+//     socket,
+//     profileCompletion,
+//     token: authService.getToken(), // ✅ Token is now exposed
+//     register,
+//     login,
+//     logout,
+//     forgotPassword,
+//     updateChessExperience,
+//     updateProfile,
+//     changeName,
+//     changePassword,
+//     changeEmail,
+//     toggleKidMode,
+//     updateSettings,
+//     closeAccount,
+//     refreshProfileCompletion,
+//     isAuthenticated: authService.isAuthenticated()
+//   };
+
+//   return (
+//     <AuthContext.Provider value={value}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
+
+//testing 3
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import authService from '../services/authService';
 import profileService from '../services/profileService';
 import api from '../services/api';
 import { io } from 'socket.io-client';
 
-//const SOCKET_URL = 'http://localhost:5000'; // Replace with your actual socket URL
-const SOCKET_URL = 'https://api.chessverss.com'
+//const SOCKET_URL = 'http://localhost:5000';
+ const SOCKET_URL = 'https://api.chessverss.com'
 
 const AuthContext = createContext(null);
 
@@ -851,20 +1290,21 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [socket, setSocket] = useState(null);
   const [profileCompletion, setProfileCompletion] = useState(0);
+  const socketRef = useRef(null); // ✅ THIS WAS MISSING - CRITICAL FIX
 
   useEffect(() => {
     const initAuth = async () => {
       const storedUser = authService.getCurrentUserFromStorage();
       const token = authService.getToken();
 
-      console.log('AuthProvider - Stored user:', storedUser);
-      console.log('AuthProvider - Token exists:', !!token);
+      console.log('🔐 AuthProvider - Stored user:', storedUser);
+      console.log('🔐 AuthProvider - Token exists:', !!token);
 
       if (storedUser && token) {
         try {
           // Verify the token and get fresh user data
           const response = await authService.getCurrentUser();
-          console.log('AuthProvider - User data from API:', response);
+          console.log('🔐 AuthProvider - User data from API:', response);
           
           // Set the user from the API response
           const userData = response.user || response;
@@ -879,26 +1319,11 @@ export const AuthProvider = ({ children }) => {
           }
           
           // Initialize socket connection
-          const newSocket = io(SOCKET_URL, {
-            transports: ['websocket'],
-            withCredentials: true,
-            query: {
-              userId: userData._id || userData.id,
-              token: token
-            }
-          });
-          
-          newSocket.on('connect', () => {
-            console.log('Socket connected in AuthProvider');
-            newSocket.emit('authenticate', { 
-              userId: userData._id || userData.id, 
-              token 
-            });
-          });
-          
-          setSocket(newSocket);
+          if (token && (userData._id || userData.id)) {
+            initializeSocket(userData, token);
+          }
         } catch (error) {
-          console.error('AuthProvider - Error fetching user:', error);
+          console.error('🔐 AuthProvider - Error fetching user:', error);
           authService.logout();
           setUser(null);
         }
@@ -909,40 +1334,67 @@ export const AuthProvider = ({ children }) => {
     initAuth();
 
     return () => {
-      if (socket) {
-        socket.close();
+      if (socketRef.current) {
+        socketRef.current.close();
       }
     };
   }, []);
+
+  const initializeSocket = (userData, token) => {
+    const userId = userData._id || userData.id;
+    console.log('🔌 Initializing socket with userId:', userId);
+    
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      auth: {
+        token: token
+      },
+      query: {
+        userId: userId
+      },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
+    
+    newSocket.on('connect', () => {
+      console.log('✅ Socket connected in AuthProvider');
+      newSocket.emit('authenticate', { 
+        userId: userId, 
+        token: token 
+      });
+    });
+    
+    newSocket.on('authenticated', () => {
+      console.log('✅ Socket authenticated successfully');
+    });
+    
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message);
+    });
+    
+    setSocket(newSocket);
+    socketRef.current = newSocket;
+  };
 
   const register = async (userData) => {
     try {
       setError(null);
       const response = await authService.register(userData);
-      console.log('Register response:', response);
+      console.log('📝 Register response:', response);
       
       const userData_ = response.user || response;
+      const token = authService.getToken();
+      
       setUser(userData_);
       
       // Initialize socket connection
-      const token = authService.getToken();
-      const newSocket = io(SOCKET_URL, {
-        transports: ['websocket'],
-        withCredentials: true,
-        query: {
-          userId: userData_._id || userData_.id,
-          token: token
-        }
-      });
+      if (token && (userData_._id || userData_.id)) {
+        initializeSocket(userData_, token);
+      }
       
-      newSocket.on('connect', () => {
-        newSocket.emit('authenticate', { 
-          userId: userData_._id || userData_.id, 
-          token 
-        });
-      });
-      
-      setSocket(newSocket);
       return userData_;
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
@@ -953,10 +1405,23 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       setError(null);
+      console.log('🔐 Attempting login with:', { email: credentials.email });
+      
       const response = await authService.login(credentials);
-      console.log('Login response:', response);
+      console.log('🔐 Login response received:', response);
       
       const userData = response.user || response;
+      const userId = userData._id || userData.id;
+      const token = authService.getToken();
+      
+      console.log('🔐 User ID after login:', userId);
+      console.log('🔐 Token exists after login:', !!token);
+      
+      if (!userId) {
+        console.error('❌ No user ID in response:', userData);
+        throw new Error('Invalid user data received');
+      }
+      
       setUser(userData);
       
       // Fetch profile completion after login
@@ -968,26 +1433,16 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Initialize socket connection
-      const token = authService.getToken();
-      const newSocket = io(SOCKET_URL, {
-        transports: ['websocket'],
-        withCredentials: true,
-        query: {
-          userId: userData._id || userData.id,
-          token: token
-        }
-      });
+      if (token && userId) {
+        initializeSocket(userData, token);
+      } else {
+        console.warn('⚠️ Cannot initialize socket - missing token or userId');
+      }
       
-      newSocket.on('connect', () => {
-        newSocket.emit('authenticate', { 
-          userId: userData._id || userData.id, 
-          token 
-        });
-      });
-      
-      setSocket(newSocket);
       return userData;
     } catch (error) {
+      console.error('❌ Login error details:', error);
+      console.error('❌ Error response:', error.response?.data);
       setError(error.response?.data?.message || 'Login failed');
       throw error;
     }
@@ -1000,7 +1455,6 @@ export const AuthProvider = ({ children }) => {
         chessExperience: experienceId 
       });
       
-      // Update user in state and localStorage
       const updatedUser = response.data.user;
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -1012,18 +1466,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Profile Methods
   const updateProfile = async (profileData) => {
     try {
       setError(null);
       const response = await profileService.updateProfile(profileData);
       
-      // Update user in state and localStorage
       const updatedUser = response.user;
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
-      // Update profile completion
       try {
         const completion = await profileService.getProfileCompletion();
         setProfileCompletion(completion.completion);
@@ -1043,7 +1494,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await profileService.changeName(newName);
       
-      // Update user in state and localStorage
       const updatedUser = { ...user, name: response.name };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -1071,7 +1521,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await profileService.changeEmail(newEmail);
       
-      // Update user in state and localStorage
       const updatedUser = { ...user, email: response.email };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -1088,7 +1537,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await profileService.toggleKidMode();
       
-      // Update user in state and localStorage
       const updatedUser = { ...user, kidMode: response.kidMode };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -1105,7 +1553,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const response = await profileService.updateSettings(settings);
       
-      // Update user in state and localStorage
       const updatedUser = { ...user, settings: response.settings };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -1121,7 +1568,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await profileService.closeAccount(password);
-      logout(); // Logout after closing account
+      logout();
       return response;
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to close account');
@@ -1141,6 +1588,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('🔐 Logging out user');
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
     if (socket) {
       socket.close();
     }
@@ -1160,14 +1612,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ FIX: Added token to the context value
   const value = {
     user,
     loading,
     error,
     socket,
     profileCompletion,
-    token: authService.getToken(), // ✅ Token is now exposed
+    token: authService.getToken(),
     register,
     login,
     logout,
