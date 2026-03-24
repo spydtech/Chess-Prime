@@ -586,7 +586,8 @@ export const SocketProvider = ({ children }) => {
 
     initAttemptRef.current = true;
 
-    const SOCKET_URL = 'http://localhost:5000';
+    //const SOCKET_URL = 'http://localhost:5000';
+    const SOCKET_URL = 'https://api.chessverss.com';
     
     console.log('🔌 SocketContext - Initializing socket connection for user:', user._id || user.id);
     

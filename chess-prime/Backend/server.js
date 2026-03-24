@@ -38,7 +38,14 @@ const allowedOrigins = [
   "http://localhost:3001",
   "http://13.206.51.201",
   "http://13.206.51.201:5173",
-  "http://13.206.51.201:5174"
+  "http://13.206.51.201:5174",
+  "http://chessverss.com",
+  "http://www.chessverss.com",
+  "https://api.chessverss.com",
+  "https://www.chessverss.com",   
+
+  "http://chessverss.com:5173",
+  
 ];
 
 // Socket.io setup with proper CORS
