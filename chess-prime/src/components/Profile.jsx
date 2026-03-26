@@ -1463,21 +1463,71 @@ export default function Profile() {
     fetchProfileData();
   }, []);
  
-  const fetchProfileData = async () => {
-    try {
-      setLoading(true);
-      const data = await profileService.getMyProfile();
+  // const fetchProfileData = async () => {
+
+
+  //   try {
+  //     setLoading(true);
+  //     const data = await profileService.getMyProfile();
+  //     setProfileData(data);
+     
+  //     if (data.memberSince) {
+  //       const date = new Date(data.memberSince);
+  //       setMemberSince(date.toLocaleDateString('en-US', {
+  //         day: 'numeric',
+  //         month: 'short',
+  //         year: 'numeric'
+  //       }));
+  //     }
+     
+  //     if (data.lastSeen) {
+  //       const lastSeen = new Date(data.lastSeen);
+  //       const now = new Date();
+  //       const diffMs = now - lastSeen;
+  //       const diffMins = Math.floor(diffMs / 60000);
+       
+  //       if (diffMins < 1) {
+  //         setLastActive('Just now');
+  //       } else if (diffMins < 60) {
+  //         setLastActive(`${diffMins} minute${diffMins > 1 ? 's' : ''} ago`);
+  //       } else {
+  //         setLastActive(lastSeen.toLocaleDateString());
+  //       }
+  //     }
+     
+  //     await refreshProfileCompletion();
+  //   } catch (error) {
+  //     console.error('Error fetching profile:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+ 
+
+// Update the fetchProfileData function in Profile.jsx
+const fetchProfileData = async () => {
+  try {
+    setLoading(true);
+    const data = await profileService.getMyProfile();
+    console.log('Profile data received in component:', data);
+    
+    if (data && data !== null) {
       setProfileData(data);
      
-      if (data.memberSince) {
-        const date = new Date(data.memberSince);
+      // Handle member since
+      const memberDate = data.memberSince || data.createdAt;
+      if (memberDate) {
+        const date = new Date(memberDate);
         setMemberSince(date.toLocaleDateString('en-US', {
           day: 'numeric',
           month: 'short',
           year: 'numeric'
         }));
+      } else {
+        setMemberSince('Recently');
       }
      
+      // Handle last active
       if (data.lastSeen) {
         const lastSeen = new Date(data.lastSeen);
         const now = new Date();
@@ -1491,16 +1541,33 @@ export default function Profile() {
         } else {
           setLastActive(lastSeen.toLocaleDateString());
         }
+      } else {
+        setLastActive('Recently');
       }
      
       await refreshProfileCompletion();
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
+    } else {
+      console.warn('No profile data received, using user from auth');
+      // Use user data from auth context as fallback
+      if (user) {
+        setProfileData(user);
+        setMemberSince(user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently');
+        setLastActive('Recently');
+      }
     }
-  };
- 
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    // Use user data from auth context as fallback
+    if (user) {
+      setProfileData(user);
+      setMemberSince(user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently');
+      setLastActive('Recently');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
   const fetchInvites = async () => {
     try {
       setLoadingInvites(true);

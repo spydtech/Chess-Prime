@@ -12,6 +12,7 @@ import {
   getPuzzlesByDifficulty,
   getGamePuzzles
 } from '../controllers/puzzleController.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -26,8 +27,8 @@ router.post('/validate', validateMove);
 router.post('/init', initializePuzzles);
 
 // Protected routes (should add auth middleware in production)
-router.post('/', createPuzzle);
-router.put('/:id', updatePuzzle);
-router.delete('/:id', deletePuzzle);
+router.post('/',auth, createPuzzle);
+router.put('/:id', auth, updatePuzzle);
+router.delete('/:id', auth, deletePuzzle);
 
 export default router;

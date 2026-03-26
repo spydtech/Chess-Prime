@@ -222,7 +222,15 @@ export const toggleKidMode = async (req, res) => {
 // Get profile completion percentage
 export const getProfileCompletion = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // const user = await User.findById(req.user._id);
+    // req.user is set by auth middleware
+    const userId = req.user._id;
+    console.log('Getting profile completion for user:', userId);
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     
     const fields = [
       'displayName',

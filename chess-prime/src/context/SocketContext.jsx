@@ -528,8 +528,8 @@
 // };
 
 
-// //testing 2
-// // context/SocketContext.js
+//testing 2
+// context/SocketContext.js
 // import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 // import { io } from 'socket.io-client';
 // import { useAuth } from './AuthContext';
@@ -586,8 +586,8 @@
 
 //     initAttemptRef.current = true;
 
-//     const SOCKET_URL = 'http://localhost:5000';
-//     //const SOCKET_URL = 'https://api.chessverss.com';
+//     //const SOCKET_URL = 'http://localhost:5000';
+//     const SOCKET_URL = 'https://api.chessverss.com'; // Replace with your production socket URL
     
 //     console.log('🔌 SocketContext - Initializing socket connection for user:', user._id || user.id);
     
@@ -777,7 +777,10 @@
 // };
 
 
-// testing 3
+
+
+
+
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
@@ -794,7 +797,7 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
-  const { user, token, loading } = useAuth(); // ✅ Added loading state
+  const { user, token } = useAuth();
   
   const socketRef = useRef(null);
   const eventListeners = useRef(new Map());
@@ -802,30 +805,15 @@ export const SocketProvider = ({ children }) => {
   const maxReconnectAttempts = 10;
   const initAttemptRef = useRef(false);
 
-  // ✅ Better logging - shows user state more clearly
-  console.log('🔷 SocketProvider - Rendering, user:', user?._id || user?.id || 'not loaded', 
-              'token exists:', !!token, 
-              'loading:', loading);
+  console.log('SocketProvider - Rendering, user:', user?._id, 'token exists:', !!token);
 
   // Initialize socket connection when user is available
   useEffect(() => {
-    const userId = user?._id || user?.id;
+    console.log('SocketProvider useEffect - Starting, user:', user?._id, 'token:', !!token);
     
-    console.log('🔷 SocketProvider useEffect - Starting', {
-      hasUser: !!user,
-      userId: userId,
-      hasToken: !!token,
-      loading: loading
-    });
-    
-    // Don't initialize if still loading or no user/token
-    if (loading) {
-      console.log('🔌 SocketContext - Still loading auth, waiting...');
-      return;
-    }
-    
+    // Don't initialize if no user or token
     if (!user || !token) {
-      console.log('🔌 SocketContext - No user or token, closing socket if exists');
+      console.log('SocketContext - No user or token, closing socket if exists');
       if (socketRef.current) {
         socketRef.current.removeAllListeners();
         socketRef.current.close();
@@ -839,34 +827,21 @@ export const SocketProvider = ({ children }) => {
 
     // Prevent multiple initialization attempts
     if (initAttemptRef.current && socketRef.current) {
-      console.log('🔌 SocketContext - Socket already initialized, checking connection status');
-      if (!socketRef.current.connected) {
-        console.log('🔌 SocketContext - Socket exists but not connected, attempting to connect...');
-        socketRef.current.connect();
-      }
-      return;
-    }
-
-    if (!userId) {
-      console.error('❌ SocketContext - No user ID found in user object:', user);
+      console.log('SocketContext - Socket already initialized');
       return;
     }
 
     initAttemptRef.current = true;
 
-    //const SOCKET_URL = 'http://localhost:5000';
     const SOCKET_URL = 'https://api.chessverss.com';
     
-    console.log('🔌 SocketContext - Initializing socket connection for user:', userId);
+    console.log('SocketContext - Initializing socket connection for user:', user._id || user.id);
     
     const newSocket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
-      auth: {
-        token: token
-      },
       query: {
-        userId: userId,
+        userId: user._id || user.id,
         token: token
       },
       reconnection: true,
@@ -887,7 +862,7 @@ export const SocketProvider = ({ children }) => {
       
       // Emit authentication after connection
       newSocket.emit('authenticate', {
-        userId: userId,
+        userId: user._id || user.id,
         token: token
       });
     });
@@ -919,32 +894,19 @@ export const SocketProvider = ({ children }) => {
       
       // Re-authenticate after reconnection
       newSocket.emit('authenticate', {
-        userId: userId,
+        userId: user._id || user.id,
         token: token
       });
     });
 
-    newSocket.on('reconnect_attempt', (attemptNumber) => {
-      console.log('🔄 SocketContext - Socket reconnection attempt:', attemptNumber);
-    });
-
-    newSocket.on('reconnect_error', (error) => {
-      console.error('❌ SocketContext - Socket reconnection error:', error);
-    });
-
-    newSocket.on('reconnect_failed', () => {
-      console.error('❌ SocketContext - Socket reconnection failed');
-      setConnected(false);
-    });
-
     // Replay any existing event listeners
     eventListeners.current.forEach((callback, event) => {
-      console.log('📢 SocketContext - Replaying listener for event:', event);
+      console.log('SocketContext - Replaying listener for event:', event);
       newSocket.on(event, callback);
     });
 
     return () => {
-      console.log('🔌 SocketContext - Cleaning up socket connection');
+      console.log('SocketContext - Cleaning up socket connection');
       if (socketRef.current) {
         socketRef.current.removeAllListeners();
         socketRef.current.close();
@@ -954,19 +916,16 @@ export const SocketProvider = ({ children }) => {
       initAttemptRef.current = false;
       reconnectAttemptsRef.current = 0;
     };
-  }, [user?._id, user?.id, token, loading]); // ✅ Added loading to dependencies
+  }, [user?._id, user?.id, token]);
 
   const on = useCallback((event, callback) => {
-    console.log('📢 SocketContext - Registering listener for event:', event);
+    console.log('SocketContext - Registering listener for event:', event);
     
     // Store listener
     eventListeners.current.set(event, callback);
     
     // If socket exists, register immediately
     if (socketRef.current) {
-      // Remove old listener if exists
-      socketRef.current.off(event);
-      // Add new listener
       socketRef.current.on(event, callback);
       console.log(`✅ SocketContext - Listener registered for event: ${event}`);
     } else {
@@ -975,20 +934,17 @@ export const SocketProvider = ({ children }) => {
   }, []);
 
   const off = useCallback((event, callback) => {
-    console.log('🔇 SocketContext - Removing listener for event:', event);
+    console.log('SocketContext - Removing listener for event:', event);
     
     if (callback) {
-      // Remove specific callback
       if (socketRef.current) {
         socketRef.current.off(event, callback);
       }
-      // Remove from stored listeners if matches
       const storedCallback = eventListeners.current.get(event);
       if (storedCallback === callback) {
         eventListeners.current.delete(event);
       }
     } else {
-      // Remove all callbacks for this event
       if (socketRef.current) {
         socketRef.current.off(event);
       }
@@ -998,18 +954,18 @@ export const SocketProvider = ({ children }) => {
 
   const emit = useCallback((event, data, callback) => {
     if (!socketRef.current) {
-      console.warn('❌ SocketContext - Socket not initialized, cannot emit:', event);
+      console.warn('SocketContext - Socket not initialized, cannot emit:', event);
       if (callback) callback({ error: 'Socket not initialized' });
       return false;
     }
     
     if (!connected) {
-      console.warn('❌ SocketContext - Socket not connected, cannot emit:', event);
+      console.warn('SocketContext - Socket not connected, cannot emit:', event);
       if (callback) callback({ error: 'Socket not connected' });
       return false;
     }
     
-    console.log('📤 SocketContext - Emitting event:', event, data);
+    console.log('SocketContext - Emitting event:', event, data);
     if (callback) {
       socketRef.current.emit(event, data, callback);
     } else {
@@ -1018,13 +974,12 @@ export const SocketProvider = ({ children }) => {
     return true;
   }, [connected]);
 
-  // Helper to manually reconnect
   const reconnect = useCallback(() => {
     if (socketRef.current) {
-      console.log('🔄 SocketContext - Manually reconnecting socket...');
+      console.log('SocketContext - Manually reconnecting socket...');
       socketRef.current.connect();
     } else {
-      console.log('❌ SocketContext - Socket not initialized, cannot reconnect');
+      console.log('SocketContext - Socket not initialized, cannot reconnect');
     }
   }, []);
 
