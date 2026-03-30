@@ -2901,25 +2901,48 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const loadGameHistory = async () => {
-    try {
-      const response = await api.get('/games/user/history');
-      setGameHistory(response.data.games);
-    } catch (error) {
-      console.error('Load game history error:', error);
-    }
-  };
+  // const loadGameHistory = async () => {
+  //   try {
+  //     const response = await api.get('/games/user/history');
+  //     setGameHistory(response.data.games);
+  //   } catch (error) {
+  //     console.error('Load game history error:', error);
+  //   }
+  // };
 
   
 
-  const loadActiveGames = async () => {
-    try {
-      const response = await api.get('/games/user/active');
-      setActiveGames(response.data.games);
-    } catch (error) {
-      console.error('Load active games error:', error);
-    }
-  };
+  // const loadActiveGames = async () => {
+  //   try {
+  //     const response = await api.get('/games/user/active');
+  //     setActiveGames(response.data.games);
+  //   } catch (error) {
+  //     console.error('Load active games error:', error);
+  //   }
+  // };
+
+
+  const loadGameHistory = async () => {
+  try {
+    const response = await api.get('/games/user/history');
+    setGameHistory(response.data.games || []);
+  } catch (error) {
+    console.error('Load game history error:', error);
+    // Don't throw, just set empty array
+    setGameHistory([]);
+  }
+};
+
+const loadActiveGames = async () => {
+  try {
+    const response = await api.get('/games/user/active');
+    setActiveGames(response.data.games || []);
+  } catch (error) {
+    console.error('Load active games error:', error);
+    // Don't throw, just set empty array
+    setActiveGames([]);
+  }
+};
 
   // Computer Game APIs
   const startComputerGame = async (timeControl, difficulty = 'medium') => {
