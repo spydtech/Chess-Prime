@@ -607,6 +607,10 @@ import { FaArrowLeft } from "react-icons/fa";
 import profileService from "../services/profileService";
 import { useAuth } from "../context/AuthContext";
 
+
+
+const API_BASE_URL = 'https://chessverss.com';
+
 export default function BoardStyle() {
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [selectedPiece, setSelectedPiece] = useState(null);
@@ -655,12 +659,12 @@ export default function BoardStyle() {
   const getPieceImageUrl = (pieceId, pieceType = 'wN') => {
     // Try different possible paths
     const possiblePaths = [
-      `/assets/chesspieces/${pieceId}/${pieceType}.svg`,
-      `/assets/chesspieces/${pieceId}/${pieceType}.png`,
-      `/assets/chesspieces/${pieceId}/wN.svg`,
-      `/assets/chesspieces/${pieceId}/wN.png`,
-      `/chesspieces/${pieceId}/${pieceType}.svg`,
-      `/chesspieces/${pieceId}/${pieceType}.png`,
+      `${API_BASE_URL}/assets/chesspieces/${pieceId}/${pieceType}.svg`,
+      `${API_BASE_URL}/assets/chesspieces/${pieceId}/${pieceType}.png`,
+      `${API_BASE_URL}/assets/chesspieces/${pieceId}/wN.svg`,
+      `${API_BASE_URL}/assets/chesspieces/${pieceId}/wN.png`,
+      `${API_BASE_URL}/chesspieces/${pieceId}/${pieceType}.svg`,
+      `${API_BASE_URL}/chesspieces/${pieceId}/${pieceType}.png`,
       `https://cdn.jsdelivr.net/npm/chessboard-element@1.0.0/assets/pieces/${pieceId}/${pieceType}.svg`,
     ];
     
@@ -860,7 +864,7 @@ export default function BoardStyle() {
               <div className="flex items-center gap-2">
                 {!imageErrors[selectedPiece] ? (
                   <img
-                    src={`/assets/chesspieces/${selectedPiece}/wN.svg`}
+                    src={`${API_BASE_URL}/assets/chesspieces/${selectedPiece}/wN.svg`}
                     alt=""
                     className="w-8 h-8 object-contain"
                     onError={() => handleImageError(selectedPiece)}
