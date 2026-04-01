@@ -2152,6 +2152,7 @@ import { useGame } from "../../../context/GameContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useSocket } from "../../../context/SocketContext";
 
+const API_BASE_URL = 'https://chessverss.com'
 export default function ChessGame({ gameState, onExit }) {
   const [game, setGame] = useState(new Chess());
   const [orientation, setOrientation] = useState('white');
@@ -2295,7 +2296,7 @@ export default function ChessGame({ gameState, onExit }) {
 
   // ✅ NEW — dynamic image generator from first code
   const getPieceImage = (color, type) => {
-    return `/src/assets/chesspieces/${pieceSet}/${color}${type.toUpperCase()}.svg`;
+    return `${API_BASE_URL}/src/assets/chesspieces/${pieceSet}/${color}${type.toUpperCase()}.svg`;
   };
   console.log("gamestatekaksdagsdjkagsdkjasdas", gameState)
   // Check if mobile/tablet view
@@ -3353,12 +3354,12 @@ export default function ChessGame({ gameState, onExit }) {
                             {set.charAt(0).toUpperCase() + set.slice(1, 8)}
                           </span>
                           <img
-                            src={`/src/assets/chesspieces/${set}/wN.svg`}
+                            src={`${API_BASE_URL}/src/assets/chesspieces/${set}/wN.svg`}
                             alt="preview"
                             className="w-6 h-6 object-contain"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = `/src/assets/chesspieces/${set}/wN.png`;
+                              e.target.src = `${API_BASE_URL}/src/assets/chesspieces/${set}/wN.png`;
                             }}
                           />
                         </button>
@@ -3432,12 +3433,12 @@ export default function ChessGame({ gameState, onExit }) {
 
                       {/* Knight Preview */}
                       <img
-                        src={`/src/assets/chesspieces/${set}/wN.svg`}
+                        src={`${API_BASE_URL}/src/assets/chesspieces/${set}/wN.svg`}
                         alt="knight preview"
                         className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = `/src/assets/chesspieces/${set}/wN.png`;
+                          e.target.src = `${API_BASE_URL}/src/assets/chesspieces/${set}/wN.png`;
                         }}
                       />
                     </button>
