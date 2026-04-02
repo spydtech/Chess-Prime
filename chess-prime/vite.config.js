@@ -62,16 +62,13 @@
 //   }
 // })
 
-
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-// Remove this line: import tailwindcss from '@tailwindcss/vite'
 import imagemin from 'vite-plugin-imagemin'
 
 export default defineConfig({
   plugins: [
     react(),
-    // Remove this line: tailwindcss(),
     imagemin({
       // Optimize images during build
       gifsicle: {
@@ -136,13 +133,7 @@ export default defineConfig({
     },
     assetsInlineLimit: 4096,
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    },
+    minify: 'esbuild', // Using esbuild instead of terser to avoid additional dependency
     // Empty outDir before building
     emptyOutDir: true,
     // Copy public assets
