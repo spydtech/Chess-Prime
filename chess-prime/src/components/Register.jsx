@@ -271,8 +271,7 @@
 // export default RegisterForm;
 
 
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, User, Mail, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -289,6 +288,40 @@ const RegisterForm = () => {
   });
   const [localError, setLocalError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
+
+  useEffect(() => {
+    // Add global styles to prevent overscroll
+    const style = document.createElement('style');
+    style.textContent = `
+      html, body {
+        overscroll-behavior: none;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+      
+      .register-wrapper {
+        overscroll-behavior: none;
+        touch-action: pan-y pinch-zoom;
+      }
+      
+      img {
+        -webkit-user-drag: none;
+        user-drag: none;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    
+    return () => {
+      document.head.removeChild(style);
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -348,48 +381,49 @@ const RegisterForm = () => {
   const displayError = localError || authError;
 
   return (
-    <div className="min-h-screen bg-[#0f0702] relative overflow-hidden flex items-start justify-center pt-8">
+    <div className="register-wrapper h-screen bg-[#0f0702] relative flex items-center justify-center overflow-hidden">
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-6 left-6 text-white hover:text-[#FFA200] transition"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 text-white hover:text-[#FFA200] transition z-20"
       >
         <ArrowLeft size={28} />
       </button>
 
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-[700px] h-[700px] bg-[#FFA200] opacity-20 rounded-full blur-[180px]" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-[500px] h-[500px] sm:w-[700px] sm:h-[700px] bg-[#FFA200] opacity-20 rounded-full blur-[180px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-6 text-center">
+      <div className="relative z-10 w-full max-w-md px-4 sm:px-6 text-center -mt-10">
         <img
           src={knight}
           alt="horse"
-          className="w-100 h-72 mx-auto mb-2"
+          className="w-48 h-40 sm:w-64 sm:h-52 md:w-72 md:h-60 mx-auto mb-2 sm:mb-4 object-contain"
+          draggable="false"
         />
 
-        <h1 className="text-white text-3xl font-semibold">
+        <h1 className="text-white text-2xl sm:text-3xl font-semibold">
           Create Your Account
         </h1>
 
-        <p className="text-gray-400 mt-1 mb-4">
+        <p className="text-gray-400 text-sm sm:text-base mt-0 sm:mt-1 mb-4 sm:mb-6">
           Join ChessVerse and start your journey
         </p>
 
         {displayError && (
-          <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-4">
+          <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-4 text-sm">
             {displayError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form  className='' onSubmit={handleSubmit} noValidate>
           <div className="text-left mb-1">
-            <label className="text-gray-300 text-sm font-medium">
+            <label className="text-gray-300 text-xs sm:text-sm font-medium">
               Full Name
             </label>
           </div>
 
           <div className="relative mb-1">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               name="name"
@@ -398,21 +432,21 @@ const RegisterForm = () => {
               placeholder="Enter your full name"
               className={`w-full bg-transparent border ${
                 validationErrors.name ? 'border-red-500' : 'border-[#FFA200]'
-              } rounded-full py-3 pl-12 text-white outline-none focus:ring-2 focus:ring-[#FFA200]`}
+              } rounded-full py-2.5 sm:py-3 pl-10 sm:pl-12 text-white text-sm sm:text-base outline-none focus:ring-2 focus:ring-[#FFA200]`}
             />
           </div>
           {validationErrors.name && (
-            <p className="text-red-500 text-xs text-left mb-3">{validationErrors.name}</p>
+            <p className="text-red-500 text-xs text-left mb-2 sm:mb-3">{validationErrors.name}</p>
           )}
 
-          <div className="text-left mb-1 mt-3">
-            <label className="text-gray-300 text-sm font-medium">
+          <div className="text-left mb-1 mt-2 sm:mt-3">
+            <label className="text-gray-300 text-xs sm:text-sm font-medium">
               Email Address
             </label>
           </div>
 
           <div className="relative mb-1">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="email"
               name="email"
@@ -421,21 +455,21 @@ const RegisterForm = () => {
               placeholder="Enter your email"
               className={`w-full bg-transparent border ${
                 validationErrors.email ? 'border-red-500' : 'border-[#FFA200]'
-              } rounded-full py-3 pl-12 text-white outline-none focus:ring-2 focus:ring-[#FFA200]`}
+              } rounded-full py-2.5 sm:py-3 pl-10 sm:pl-12 text-white text-sm sm:text-base outline-none focus:ring-2 focus:ring-[#FFA200]`}
             />
           </div>
           {validationErrors.email && (
-            <p className="text-red-500 text-xs text-left mb-3">{validationErrors.email}</p>
+            <p className="text-red-500 text-xs text-left mb-2 sm:mb-3">{validationErrors.email}</p>
           )}
 
-          <div className="text-left mb-1 mt-3">
-            <label className="text-gray-300 text-sm font-medium">
+          <div className="text-left mb-1 mt-2 sm:mt-3">
+            <label className="text-gray-300 text-xs sm:text-sm font-medium">
               Password
             </label>
           </div>
 
           <div className="relative mb-1">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="password"
               name="password"
@@ -444,28 +478,28 @@ const RegisterForm = () => {
               placeholder="Enter your password"
               className={`w-full bg-transparent border ${
                 validationErrors.password ? 'border-red-500' : 'border-[#FFA200]'
-              } rounded-full py-3 pl-12 text-white outline-none focus:ring-2 focus:ring-[#FFA200]`}
+              } rounded-full py-2.5 sm:py-3 pl-10 sm:pl-12 text-white text-sm sm:text-base outline-none focus:ring-2 focus:ring-[#FFA200]`}
             />
           </div>
           {validationErrors.password && (
-            <p className="text-red-500 text-xs text-left mb-5">{validationErrors.password}</p>
+            <p className="text-red-500 text-xs text-left mb-4 sm:mb-5">{validationErrors.password}</p>
           )}
 
           <button
             type="submit"
             disabled={authLoading}
-            className="w-full bg-[#FFA200] text-white py-3 rounded-full text-lg font-semibold hover:bg-[#e69500] transition shadow-lg shadow-[#FFA200]/30 disabled:opacity-50 disabled:cursor-not-allowed mt-5"
+            className="w-full bg-[#FFA200] text-white py-2.5 sm:py-3 rounded-full text-base sm:text-lg font-semibold hover:bg-[#e69500] transition shadow-lg shadow-[#FFA200]/30 disabled:opacity-50 disabled:cursor-not-allowed mt-4 sm:mt-5"
           >
             {authLoading ? (
               <div className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                 Registering...
               </div>
             ) : 'Register'}
           </button>
         </form>
 
-        <div className="mt-4 text-gray-400">
+        <div className="mt-4 sm:mt-6 text-gray-400 text-sm sm:text-base">
           Already have an account?{" "}
           <span 
             onClick={() => navigate("/login")}
