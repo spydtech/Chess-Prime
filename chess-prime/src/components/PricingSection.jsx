@@ -220,7 +220,7 @@ const PricingSection = () => {
         </div>
 
         {/* Bottom Support Bar (if needed) */}
-        <div className="mt-16 border-t border-yellow-500/20 pt-6">
+        {/* <div className="mt-16 border-t border-yellow-500/20 pt-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <span className="text-gray-400">🏆 5000+ Students Enrolled</span>
@@ -234,7 +234,7 @@ const PricingSection = () => {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
