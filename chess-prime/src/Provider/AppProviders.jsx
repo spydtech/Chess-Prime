@@ -13,5 +13,5 @@ export const AppProviders = ({ children }) => {
         </GameProvider>
       </SocketProvider>
     </AuthProvider>
-  );
+  ); 
 };
